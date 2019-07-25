@@ -1,0 +1,36 @@
+/* THIS FILE WILL BE OVERWRITTEN BY DEV-C++ */
+/* DO NOT EDIT! */
+
+#include <windows.h> // include for version info constants
+
+
+A ICON "1SV2K(x86).ico"
+
+//
+// TO CHANGE VERSION INFORMATION, EDIT PROJECT OPTIONS...
+//
+1 VERSIONINFO
+FILEVERSION 2,2,2,2
+PRODUCTVERSION 2,2,2,2
+FILETYPE VFT_APP
+{
+  BLOCK "StringFileInfo"
+  {
+    BLOCK "080404E4"
+    {
+      VALUE "CompanyName", "Immortal Rover Games"
+      VALUE "FileVersion", "2.2.2.2"
+      VALUE "FileDescription", "Ò»ÐÜÕ½¶þ¹·"
+      VALUE "InternalName", "1SV2K"
+      VALUE "LegalCopyright", "Immortal Rover Games Studio"
+      VALUE "LegalTrademarks", "Immortal Rover Games Studio"
+      VALUE "OriginalFilename", "1SV2K"
+      VALUE "ProductName", "1SV2K"
+      VALUE "ProductVersion", "2.2.2.2"
+    }
+  }
+  BLOCK "VarFileInfo"
+  {
+    VALUE "Translation", 0x0804, 1252
+  }
+}

@@ -1,0 +1,33 @@
+# Project: 1SV2K(x86)
+# Makefile created by Dev-C++ 5.11
+
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+RES      = 1SV2K(x64)_private.res
+OBJ      = 1SV2K.o $(RES)
+LINKOBJ  = 1SV2K.o $(RES)
+LIBS     = -L"E:/Software/Dev-Cpp/MinGW64/lib32" -L"E:/Software/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -m32
+INCS     = -I"E:/Software/Dev-Cpp/MinGW64/include" -I"E:/Software/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"E:/Software/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
+CXXINCS  = -I"E:/Software/Dev-Cpp/MinGW64/include" -I"E:/Software/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"E:/Software/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"E:/Software/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
+BIN      = 1SV2K(x86).exe
+CXXFLAGS = $(CXXINCS) -m32
+CFLAGS   = $(INCS) -m32
+RM       = rm.exe -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before $(BIN) all-after
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o $(BIN) $(LIBS)
+
+1SV2K.o: 1SV2K.cpp
+	$(CPP) -c 1SV2K.cpp -o 1SV2K.o $(CXXFLAGS)
+
+1SV2K(x64)_private.res: 1SV2K(x64)_private.rc 
+	$(WINDRES) -i 1SV2K(x64)_private.rc -F pe-i386 --input-format=rc -o 1SV2K(x64)_private.res -O coff 
+

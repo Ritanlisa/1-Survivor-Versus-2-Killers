@@ -11,7 +11,7 @@ Bis jetzt dauert es ein Jahr. Als ich anfing, mit Dead By Daylight in Kontakt zu
 Ich habe das Spiel so weit gemacht, dass die Zeit, aber ein großer Bug schlug mich, dass das Spiel würde aufhören, nach Ihrem ersten Schritt zu laufen.Wegen dieses Wahnsinns Bug habe ich es zu reparieren gelassen, bis letzte Wochen.
 Mein nächster Schritt ist, die "Rendering"-Engine (wie ich "Printing Engine" nannte) wieder aufzubauen, wird das Spiel MFC Versionen als 3.x.x.x, mit neuen Überlebenden, Fähigkeiten, Killer -Mode, und Online -Spiele -Unterstützung veröffentlichen.
 P.S.:Ich brauche einen Kunstdesigner, jemand kann helfen?
-# simplefied-chinese 简体中文
+# Simplefied-Chinese 简体中文
 这是我2018年开始的第一个游戏项目。
 到目前为止，它已经有1年的年头了。当我开始接触黎明杀机时，我想创建一个这样的游戏，杀手们与幸存者战斗。然而，我们学校的只有Dev-Cpp的32位计算机让我很抓狂。
 到那时为止，我已经把这个游戏做成了这样。但是一个大Bug让我感到很不安，游戏会在你走第一步之后卡住。因为这个疯狂的BUG我把它留到了几个星期前才修复。我修复了许多错误，并创建了许多新的游戏机制。

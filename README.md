@@ -1,16 +1,14 @@
 # last update info
 
-latest version:1.4.1.1
+latest version:1.5.1.1
 
-last updated on 15/8/2019
+last updated on 18/8/2019
 
 updates:
 
-1.introduced multi-floor map supplied
+1.introduced offline killer gamemode
 
-2.add 2 multi-floor maps
-
-3.fix bugs(too much of them(；´д｀)ゞ)
+2.fix bugs(also too much of them (；´д｀)ゞ,i hate bugs!)
 
 # Introduction to 1-Survivor-Versus-2-Killers
 ## English

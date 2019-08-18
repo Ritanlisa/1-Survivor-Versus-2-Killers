@@ -117,7 +117,7 @@ void _debug(const char* func,int line,int x,int y) {
 				} else if(mapG[i][j][l]==-1||((!(isKillerHere(i,j,l)||isAnotherTrapHere(i,j,l,-1)
 				                                 ||watchable[i-playerPosX+22][j-playerPosY+22]))&&(!ability))
 				          ||((!watchable[i-playerPosX+22][j-playerPosY+22])&&ability&&difficulty>0)) {
-					fprintf(fileptr,"â– ");
+					fprintf(fileptr,"¡ö");
 					continue;
 				} else if(isKillerHere(i,j,l)) {
 					fprintf(fileptr,"K ");
@@ -126,7 +126,7 @@ void _debug(const char* func,int line,int x,int y) {
 					fprintf(fileptr,"O ");
 					continue;
 				} else if(mapG[i][j][l]==1) {
-					fprintf(fileptr,"â–¡");
+					fprintf(fileptr,"¡õ");
 					continue;
 				} else if(mapG[i][j][l]>=2&&mapG[i][j][l]<=9) {
 					fprintf(fileptr,"%dF",10-mapG[i][j][l]);
@@ -139,7 +139,7 @@ void _debug(const char* func,int line,int x,int y) {
 			}
 			fprintf(fileptr,"\n");
 		}
-		fprintf(fileptr,"%dæ¥¼\n",l);
+		fprintf(fileptr,"%dÂ¥\n",l);
 	}
 	fprintf(fileptr,"\n\n\n");
 	fclose(fileptr);
@@ -152,70 +152,70 @@ namespace offlineSurvivor {
 
 	void printAchieveAchievement(int achievementID) {
 		system("cls");
-		printf("æ­å–œï¼šæ‚¨å·²è§£é”æˆå°±ï¼š\n");
+		printf("¹§Ï²£ºÄúÒÑ½âËø³É¾Í£º\n");
 		switch(achievementID) {
 			case 1:
-				printf("            è¿™ä¹ˆç®€å•ï¼Œæœ‰éš¾åº¦å—ï¼Ÿ\n");
-				printf("è§£é”æ¡ä»¶ï¼šèµ¢å¾—ä¸€å±€èƒœåˆ©\n");
+				printf("            ÕâÃ´¼òµ¥£¬ÓĞÄÑ¶ÈÂğ£¿\n");
+				printf("½âËøÌõ¼ş£ºÓ®µÃÒ»¾ÖÊ¤Àû\n");
 				break;
 			case 2:
-				printf("               é™·é˜±æ˜¯æˆ‘å®¶\n");
-				printf("è§£é”æ¡ä»¶ï¼šè¿ç»­ä¸¤æ¬¡ç”¨é™·é˜±æ€æ­»æ€æ‰‹\n");
+				printf("               ÏİÚåÊÇÎÒ¼Ò\n");
+				printf("½âËøÌõ¼ş£ºÁ¬ĞøÁ½´ÎÓÃÏİÚåÉ±ËÀÉ±ÊÖ\n");
 				break;
 			case 3:
-				printf("               æ²¡æ„æ€ï¼Œå¤ªç®€å•\n");
-				printf("è§£é”æ¡ä»¶ï¼šèµ¢å¾—ä¸€å±€ä¸­ç­‰æ¨¡å¼\n");
+				printf("               Ã»ÒâË¼£¬Ì«¼òµ¥\n");
+				printf("½âËøÌõ¼ş£ºÓ®µÃÒ»¾ÖÖĞµÈÄ£Ê½\n");
 				break;
 			case 4:
-				printf("               å¤§åŠ›å£«åŠ›æ¶\n");
-				printf("è§£é”æ¡ä»¶ï¼šè¿ç»­ä¸¤æ¬¡ç”¨æ–¹å—æ€æ­»æ€æ‰‹\n");
+				printf("               ´óÁ¦Ê¿Á¦¼Ü\n");
+				printf("½âËøÌõ¼ş£ºÁ¬ĞøÁ½´ÎÓÃ·½¿éÉ±ËÀÉ±ÊÖ\n");
 				break;
 			case 5:
-				printf("               æœ‰æœ¬äº‹å†éš¾ç‚¹\n");
-				printf("è§£é”æ¡ä»¶ï¼šèµ¢å¾—ä¸€å±€å›°éš¾æ¨¡å¼\n");
+				printf("               ÓĞ±¾ÊÂÔÙÄÑµã\n");
+				printf("½âËøÌõ¼ş£ºÓ®µÃÒ»¾ÖÀ§ÄÑÄ£Ê½\n");
 				break;
 			case 6:
-				printf("              æˆ‘è‡ªå¸¦å…‰ç¯æ€•è¿‡è°\n");
-				printf("è§£é”æ¡ä»¶ï¼šåœ¨ä¸è¢«æ”»å‡»çš„æƒ…å†µä¸‹å‡»æ€ä¸¤ä½æ€æ‰‹\n");
+				printf("              ÎÒ×Ô´ø¹â»·ÅÂ¹ıË­\n");
+				printf("½âËøÌõ¼ş£ºÔÚ²»±»¹¥»÷µÄÇé¿öÏÂ»÷É±Á½Î»É±ÊÖ\n");
 				break;
 			case 7:
-				printf("            æ•æˆ‘ç›´è¨€è¿™æ˜¯ä¸ªåƒåœ¾æ¸¸æˆ\n");
-				printf("è§£é”æ¡ä»¶ï¼šèµ¢å¾—ä¸€å±€åœ°ç‹±æ¨¡å¼\n");
+				printf("            Ë¡ÎÒÖ±ÑÔÕâÊÇ¸öÀ¬»øÓÎÏ·\n");
+				printf("½âËøÌõ¼ş£ºÓ®µÃÒ»¾ÖµØÓüÄ£Ê½\n");
 				break;
 			case 8:
-				printf("            ä¸€åˆ€æ–©å¯¹æˆ‘çš„å…‰ç¯æ— æ•ˆ\n");
-				printf("è§£é”æ¡ä»¶ï¼šç”¨é»˜å“€èµ¢å¾—ä¸€å±€åœ°ç‹±æ¨¡å¼\n");
+				printf("            Ò»µ¶Õ¶¶ÔÎÒµÄ¹â»·ÎŞĞ§\n");
+				printf("½âËøÌõ¼ş£ºÓÃÄ¬°§Ó®µÃÒ»¾ÖµØÓüÄ£Ê½\n");
 				break;
 			case 9:
-				printf("                 ç—›æ­»ä¸ªäºº\n");
-				printf("è§£é”æ¡ä»¶ï¼šç”¨ä¸€èµ·æ‘‡æ‘†èµ¢å¾—ä¸€å±€åœ°ç‹±æ¨¡å¼\n");
+				printf("                 Í´ËÀ¸öÈË\n");
+				printf("½âËøÌõ¼ş£ºÓÃÒ»ÆğÒ¡°ÚÓ®µÃÒ»¾ÖµØÓüÄ£Ê½\n");
 				break;
 			case 10:
-				printf("                 åŒ»è€…ä»å¿ƒ\n");
-				printf("è§£é”æ¡ä»¶ï¼šç”¨é»˜å“€å’ŒåŒ»ç”Ÿèµ¢å¾—ä¸€å±€åœ°ç‹±æ¨¡å¼\n");
+				printf("                 Ò½ÕßÈÊĞÄ\n");
+				printf("½âËøÌõ¼ş£ºÓÃÄ¬°§ºÍÒ½ÉúÓ®µÃÒ»¾ÖµØÓüÄ£Ê½\n");
 				break;
 			case 11:
-				printf("                 è™½è´¥çŠ¹è£\n");
-				printf("è§£é”æ¡ä»¶ï¼šä¸€å±€åœ°ç‹±æ¨¡å¼åšæŒ6åˆ†é’Ÿä»¥ä¸Šå¹¶å¤±è´¥\n");
+				printf("                 Ëä°ÜÓÌÈÙ\n");
+				printf("½âËøÌõ¼ş£ºÒ»¾ÖµØÓüÄ£Ê½¼á³Ö6·ÖÖÓÒÔÉÏ²¢Ê§°Ü\n");
 				break;
 			case 12:
-				printf("                 è‰°è‹¦å“ç»\n");
-				printf("è§£é”æ¡ä»¶ï¼šä¸€å±€åœ°ç‹±æ¨¡å¼åšæŒ6åˆ†é’Ÿä»¥ä¸Šå¹¶è·èƒœ\n");
+				printf("                 ¼è¿à×¿¾ø\n");
+				printf("½âËøÌõ¼ş£ºÒ»¾ÖµØÓüÄ£Ê½¼á³Ö6·ÖÖÓÒÔÉÏ²¢»ñÊ¤\n");
 				break;
 			case 13:
-				printf("          å°å­¦ç”Ÿéƒ½å¯ä»¥ç©è¿‡çš„æ¸¸æˆ\n");
-				printf("è§£é”æ¡ä»¶ï¼šç”¨é»˜å“€å’Œå°å­¦ç”Ÿèµ¢å¾—ä¸€å±€åœ°ç‹±æ¨¡å¼\n");
+				printf("          Ğ¡Ñ§Éú¶¼¿ÉÒÔÍæ¹ıµÄÓÎÏ·\n");
+				printf("½âËøÌõ¼ş£ºÓÃÄ¬°§ºÍĞ¡Ñ§ÉúÓ®µÃÒ»¾ÖµØÓüÄ£Ê½\n");
 		}
 		system("pause");
 	}
 
 	void showPlayerType() {
 		system("cls");
-		printf("æŒ‰\"A\"å’Œ\"D\"åˆ‡æ¢è§’è‰²,æŒ‰Enteré”®ç¡®è®¤\n");
+		printf("°´\"A\"ºÍ\"D\"ÇĞ»»½ÇÉ«,°´Enter¼üÈ·ÈÏ\n");
 		switch(playerType) {
 			case 0:
 				system("color 9F");
-				printf("                 å°å­¦ç”Ÿ\n");
+				printf("                 Ğ¡Ñ§Éú\n");
 				printf("        @@@@@@@@@@@@@@@@@@@@@@@       \n");
 				printf("    O@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\     \n");
 				printf("   OOO@@@@@@@@@@@@@@@@@@@@@@@@@@@OO`   \n");
@@ -228,7 +228,7 @@ namespace offlineSurvivor {
 				printf("=@@@@@@@@O\\O/\\OOOO[\\OOOOOOO@@@@@@@@O@` \n");
 				printf(" @O@@@@/**,/OOO]**   *,*]]]]* ,@@@@O^  \n");
 				printf(" ,/OO@O^     ***               ,@@O/   \n");
-				printf("   OO^ `*  <â– >         <â– >     OOO    \n");
+				printf("   OO^ `*  <¡ö>         <¡ö>     OOO    \n");
 				printf("   ,^ =            \\\\           =OO     \n");
 				printf("      |              \\\\          `        \n");
 				printf("      *             ==           /   \n");
@@ -236,12 +236,12 @@ namespace offlineSurvivor {
 				printf("    ,`**          /====\\     ,`**=    \n");
 				printf("      *,**        \\====/     ****=`     \n");
 				printf("      \\*\\***               ***        \n");
-				printf("æŠ€èƒ½ï¼šæ— \n");
-				printf("ç®€ä»‹ï¼šåªä¼šçè·‘çš„è§’è‰²");
+				printf("¼¼ÄÜ£ºÎŞ\n");
+				printf("¼ò½é£ºÖ»»áÏ¹ÅÜµÄ½ÇÉ«");
 				break;
 			case 1:
 				system("color AC");
-				printf("                  ç å†œ\n");
+				printf("                  ÂëÅ©\n");
 				printf("                . @@@@@@@@@@@@@@\\\n");
 				printf("              ,@@@@@@@@@@@@@@@@@@@ `\n");
 				printf("             ,@@@@@@@@@@@@@@@@@@@@@@`\n");
@@ -249,7 +249,7 @@ namespace offlineSurvivor {
 				printf("          .@@@@@@@@@@@@@   @ @@@@@@@   .\n");
 				printf("           @ @@@@@@@@@@          @@@@  .\n");
 				printf("          . @@@@@@@  =====   ====  @@@ ^.\n");
-				printf("           ,@@@@@@@   <â– >   <â– >    @@/\n");
+				printf("           ,@@@@@@@   <¡ö>   <¡ö>    @@/\n");
 				printf("            ,@@@@@      /    \\  \\   @`\n");
 				printf("           =   @@@      / -- \\    @/\n");
 				printf("          ,   @@@@@   /\\      /   @@^\n");
@@ -262,19 +262,19 @@ namespace offlineSurvivor {
 				printf("   ./   @@@@@@@@@@@@@@/[/\\ [\\@@@@@@@@@ /\\\\`\\`[\\]\\ ,\n");
 				printf(" ,      @@@^.[\\@@@@@   \\ @@@@@@@@@@@@@/  \\\\\\\\``,, \\\n");
 				printf(".       @@ `   .   ,\\=  @@@@@@`..[@@@@    // /`,,*/ \n");
-				printf("æŠ€èƒ½ï¼šæ”¶é›†/æ”¾ç½®æ–¹å—\n");
-				printf("ç®€ä»‹ï¼šç ä»£ç å·²æˆä¹ æƒ¯çš„è§’è‰²");
+				printf("¼¼ÄÜ£ºÊÕ¼¯/·ÅÖÃ·½¿é\n");
+				printf("¼ò½é£ºÂë´úÂëÒÑ³ÉÏ°¹ßµÄ½ÇÉ«");
 				break;
 			case 2:
 				system("color F0");
-				printf("                  åŒ»ç”Ÿ\n");
+				printf("                  Ò½Éú\n");
 				printf("                      =@@@@@@@@@@@@@@]\n");
 				printf("                     @@@@@@@@@@@@@@@@@\\\n");
 				printf("                  /@@@@@@  @@@@@@@@@@@@@\n");
 				printf("                 \\@@@@       @@@@@@@@@@@@\n");
 				printf("                 @@@@         @@@@@@@@@@@@\n");
 				printf("                =@@@---\\* */---@@@@@@@@@@@`\n");
-				printf("                =@@@<â– >/   <â– >@@@@@@@@@@^\n");
+				printf("                =@@@<¡ö>/   <¡ö>@@@@@@@@@@^\n");
 				printf("                 @@@   /      @@@@@@@@@@@@^\n");
 				printf("                ,@@@@@  /   \\     @@@@@@@@@\n");
 				printf("                =@@@@               @@@@@@@`\n");
@@ -288,12 +288,12 @@ namespace offlineSurvivor {
 				printf("                       =***=         @\\\\@@@@@ \n");
 				printf("                        ,**,[       /**=@@@@@^,\n");
 				printf("                  ,/`  @  =]       ^  **\\\\\\@@^]]^\n");
-				printf("æŠ€èƒ½ï¼šè‡ªç–—\n");
-				printf("ç®€ä»‹ï¼šä¹ æƒ¯æ²»ç–—åˆ«äººçš„è§’è‰²");
+				printf("¼¼ÄÜ£º×ÔÁÆ\n");
+				printf("¼ò½é£ºÏ°¹ßÖÎÁÆ±ğÈËµÄ½ÇÉ«");
 				break;
 			case 3:
 				system("color 94");
-				printf("                  çŒäºº\n");
+				printf("                  ÁÔÈË\n");
 				printf("\n");
 				printf("\n");
 				printf("\n");
@@ -314,12 +314,12 @@ namespace offlineSurvivor {
 				printf("     \\@@@@@@@@@@@@@@@@@\\\n");
 				printf("      @@@@@@@@@@@@@@@@@@^\n");
 				printf("      =@@@@@@@@@@@@@@@@@@^\n");
-				printf("æŠ€èƒ½ï¼šæ”¾ç½®é™·é˜±\n");
-				printf("ç®€ä»‹ï¼šä¹ æƒ¯æ€ç”Ÿçš„è§’è‰²");
+				printf("¼¼ÄÜ£º·ÅÖÃÏİÚå\n");
+				printf("¼ò½é£ºÏ°¹ßÉ±ÉúµÄ½ÇÉ«");
 				break;
 			case 4:
 				system("color 5D");
-				printf("                è¡—å¤´é’å¹´\n");
+				printf("                ½ÖÍ·ÇàÄê\n");
 				printf("\n");
 				printf("\n");
 				printf("                                  /  /\\^\\^]       \n");
@@ -340,11 +340,11 @@ namespace offlineSurvivor {
 				printf("                           @@@@@@@@@@@@@@@@@@@@@@    \n");
 				printf("                       @@@@@@@@@     @@@@@@@@@@@       \n");
 				printf("                      @@@@@@@@@          @@@@@@        \n");
-				printf("æŠ€èƒ½ï¼šé—ªç°å†²åˆº\n");
-				printf("ç®€ä»‹ï¼šä¹ æƒ¯æ¸¸èµ°åœ¨è¡—å¤´çš„è§’è‰²");
+				printf("¼¼ÄÜ£ºÉÁÏÖ³å´Ì\n");
+				printf("¼ò½é£ºÏ°¹ßÓÎ×ßÔÚ½ÖÍ·µÄ½ÇÉ«");
 				break;
 		}
-		if(playerType>=(level/10)+1)printf("\n    ç­‰çº§ä¸è¶³ï¼%dçº§è§£é”:æ‚¨ç°åœ¨ä¸º%dçº§ã€‚",
+		if(playerType>=(level/10)+1)printf("\n    µÈ¼¶²»×ã£¡%d¼¶½âËø:ÄúÏÖÔÚÎª%d¼¶¡£",
 			                                   playerType*10,level);
 	}
 
@@ -367,35 +367,35 @@ namespace offlineSurvivor {
 
 	void showAbilities() {
 		system("cls");
-		printf("æŒ‰\"A\"å’Œ\"D\"åˆ‡æ¢æŠ€èƒ½,æŒ‰Enteré”®ç¡®è®¤\n");
+		printf("°´\"A\"ºÍ\"D\"ÇĞ»»¼¼ÄÜ,°´Enter¼üÈ·ÈÏ\n");
 		switch(ability) {
 			case -1:
 				system("color F0");
-				printf("           ä¸é€‰æ‹©\n");
+				printf("           ²»Ñ¡Ôñ\n");
 				break;
 			case 0:
 				system("color 08");
-				printf("           çœ¼ç›²\n");
-				printf("æ­£é¢æ•ˆæœï¼šæ˜¾ç¤ºæ€æ‰‹ä½ç½®,é™·é˜±ä½ç½®\n");
-				printf("è´Ÿé¢æ•ˆæœï¼šä»…å¯è§å‘¨å›´æ–¹å—");
+				printf("           ÑÛÃ¤\n");
+				printf("ÕıÃæĞ§¹û£ºÏÔÊ¾É±ÊÖÎ»ÖÃ,ÏİÚåÎ»ÖÃ\n");
+				printf("¸ºÃæĞ§¹û£º½ö¿É¼ûÖÜÎ§·½¿é");
 				break;
 			case 1:
 				system("color 19");
-				printf("          ä¸€èµ·æ‘‡æ‘†\n");
-				printf("æ­£é¢æ•ˆæœï¼šè¡€é‡è¶Šä½æ€æ‰‹ç§»åŠ¨é€Ÿåº¦è¶Šæ…¢\n");
-				printf("è´Ÿé¢æ•ˆæœï¼šæ¯èµ°ä¸€æ­¥é™ä½1è¡€é‡ï¼Œæ¯æ¬¡è¢«æ”»å‡»åæ‰è¡€é€Ÿåº¦ç¿»ç•ª");
+				printf("          Ò»ÆğÒ¡°Ú\n");
+				printf("ÕıÃæĞ§¹û£ºÑªÁ¿Ô½µÍÉ±ÊÖÒÆ¶¯ËÙ¶ÈÔ½Âı\n");
+				printf("¸ºÃæĞ§¹û£ºÃ¿×ßÒ»²½½µµÍ1ÑªÁ¿£¬Ã¿´Î±»¹¥»÷ºóµôÑªËÙ¶È·­·¬");
 				break;
 			case 2:
 				system("color 4C");
-				printf("            è¡€å€ºè¡€è¿˜\n");
-				printf("æ­£é¢æ•ˆæœï¼šå¼€å±€å¢åŠ 200è¡€é‡\n");
-				printf("è´Ÿé¢æ•ˆæœï¼šæ€æ‰‹æ¯æˆåŠŸæ”»å‡»ä¸€æ¬¡ï¼Œæ”»å‡»åŠ›å°±ä¸Šå‡25");
+				printf("            ÑªÕ®Ñª»¹\n");
+				printf("ÕıÃæĞ§¹û£º¿ª¾ÖÔö¼Ó200ÑªÁ¿\n");
+				printf("¸ºÃæĞ§¹û£ºÉ±ÊÖÃ¿³É¹¦¹¥»÷Ò»´Î£¬¹¥»÷Á¦¾ÍÉÏÉı25");
 				break;
 			case 3:
 				system("color 5D");
-				printf("             é»˜å“€\n");
-				printf("æ­£é¢æ•ˆæœï¼šæ€æ­»ä¸€ä½æ€æ‰‹å…¶ä»–æ€æ‰‹é»˜å“€5ç§’(æ”»å‡»åå¼¹)\n");
-				printf("è´Ÿé¢æ•ˆæœï¼šé»˜å“€åæ¯ä½æ€æ‰‹æ”»å‡»åŠ›å¢åŠ 50%c(å¯å åŠ ï¼Œæ— ä¸Šé™)",'%');
+				printf("             Ä¬°§\n");
+				printf("ÕıÃæĞ§¹û£ºÉ±ËÀÒ»Î»É±ÊÖÆäËûÉ±ÊÖÄ¬°§5Ãë(¹¥»÷·´µ¯)\n");
+				printf("¸ºÃæĞ§¹û£ºÄ¬°§ºóÃ¿Î»É±ÊÖ¹¥»÷Á¦Ôö¼Ó50%c(¿Éµş¼Ó£¬ÎŞÉÏÏŞ)",'%');
 		}
 	}
 
@@ -447,43 +447,43 @@ namespace offlineSurvivor {
 
 	void showDifficulties() {
 		system("cls");
-		printf("æŒ‰\"A\"å’Œ\"D\"åˆ‡æ¢éš¾åº¦,æŒ‰Enteré”®ç¡®è®¤\n");
+		printf("°´\"A\"ºÍ\"D\"ÇĞ»»ÄÑ¶È,°´Enter¼üÈ·ÈÏ\n");
 		switch(difficulty) {
 			case -2:
 				system("color 5D");
-				printf("è°ƒè¯•æ¨¡å¼\n");
-				printf("è§†é‡ï¼šå…¨å±\n");
-				printf("æ€æ‰‹æ•°ï¼š2");
+				printf("µ÷ÊÔÄ£Ê½\n");
+				printf("ÊÓÒ°£ºÈ«ÆÁ\n");
+				printf("É±ÊÖÊı£º2");
 				break;
 			case -1:
 				system("color 5D");
-				printf("æ•™ç¨‹æ¨¡å¼\n");
+				printf("½Ì³ÌÄ£Ê½\n");
 				break;
 			case 0:
 				system("color 2A");
-				printf("ç®€å•æ¨¡å¼\n");
-				printf("è§†é‡ï¼šå…¨å±\n");
-				printf("æ€æ‰‹æ•°ï¼š2");
+				printf("¼òµ¥Ä£Ê½\n");
+				printf("ÊÓÒ°£ºÈ«ÆÁ\n");
+				printf("É±ÊÖÊı£º2");
 				break;
 			case 1:
 				system("color 6E");
-				printf("ä¸­ç­‰æ¨¡å¼\n");
-				printf("è§†é‡ï¼šåœ†åœˆï¼ˆåŠå¾„10æ ¼ï¼‰\n");
-				printf("æ€æ‰‹æ•°ï¼š5");
+				printf("ÖĞµÈÄ£Ê½\n");
+				printf("ÊÓÒ°£ºÔ²È¦£¨°ë¾¶10¸ñ£©\n");
+				printf("É±ÊÖÊı£º5");
 				break;
 			case 2:
 				system("color C4");
-				printf("å›°éš¾æ¨¡å¼\n");
-				printf("è§†é‡ï¼šåœ†åœˆï¼ˆåŠå¾„5æ ¼ï¼‰\n");
-				printf("æ€æ‰‹æ•°ï¼š10");
+				printf("À§ÄÑÄ£Ê½\n");
+				printf("ÊÓÒ°£ºÔ²È¦£¨°ë¾¶5¸ñ£©\n");
+				printf("É±ÊÖÊı£º10");
 				break;
 			case 3:
 				system("color 08");
-				printf("åœ°ç‹±æ¨¡å¼\n");
-				printf("è§†é‡ï¼š1/4æ‰‡å½¢ï¼ˆåŠå¾„5æ ¼ï¼‰\n");
-				printf("æ€æ‰‹æ•°ï¼š15");
+				printf("µØÓüÄ£Ê½\n");
+				printf("ÊÓÒ°£º1/4ÉÈĞÎ£¨°ë¾¶5¸ñ£©\n");
+				printf("É±ÊÖÊı£º15");
 		}
-		if(difficulty>=(level/10)+1)printf("\n    ç­‰çº§ä¸è¶³ï¼%dçº§è§£é”:æ‚¨ç°åœ¨ä¸º%dçº§ã€‚",
+		if(difficulty>=(level/10)+1)printf("\n    µÈ¼¶²»×ã£¡%d¼¶½âËø:ÄúÏÖÔÚÎª%d¼¶¡£",
 			                                   difficulty*10,level);
 	}
 
@@ -651,10 +651,10 @@ namespace offlineSurvivor {
 			        ||KEY_DOWN('S')||KEY_DOWN('D')||KEY_DOWN(VK_SPACE)||KEY_DOWN(VK_LEFT)
 			        ||KEY_DOWN(VK_RIGHT)||KEY_DOWN(VK_UP)||KEY_DOWN(VK_DOWN)||KEY_DOWN(VK_NUMPAD5)||KEY_DOWN(VK_NUMPAD4)||KEY_DOWN(VK_NUMPAD6)||KEY_DOWN(VK_NUMPAD8)||KEY_DOWN(VK_NUMPAD2))) {
 				if(gameOver<=0
-				        ||killersAlive<=0)return gameOver>0&&killersAlive<=0;
+				        ||killersAlive==0)return gameOver>0&&killersAlive==0;
 				else if(KEY_DOWN(VK_ESCAPE)) {
 					paused=true;
-					if(MessageBox(NULL,"ä½ è¦é€€å‡ºæœ¬å±€æ¸¸æˆå—ï¼Ÿ","æç¤º",
+					if(MessageBox(NULL,"ÄãÒªÍË³ö±¾¾ÖÓÎÏ·Âğ£¿","ÌáÊ¾",
 					              MB_ICONINFORMATION|MB_YESNO)==IDYES) {
 						gameOver=0;
 						paused=false;
@@ -1073,7 +1073,7 @@ namespace offlineSurvivor {
 	void *showMap(void *id) {
 		system("cls");
 		system("color F0");
-		printf("              [åŠ è½½ä¸­..]                  \n");
+		printf("              [¼ÓÔØÖĞ..]                  \n");
 		for(int i=0; i<22; i++) {
 			for(int j=0; j<22; j++) {
 				if(playerPosX==i&&playerPosY==j) {
@@ -1101,7 +1101,7 @@ namespace offlineSurvivor {
 				                                        ||isAnotherTrapHere(i,j,playerPosZ,-1)
 				                                        ||watchable[i-playerPosX+22][j-playerPosY+22]))&&(!ability))
 				          ||((!watchable[i-playerPosX+22][j-playerPosY+22])&&ability&&difficulty>0)) {
-					printf("â– ");
+					printf("¡ö");
 					continue;
 				} else if(isKillerHere(i,j,playerPosZ)) {
 					if(difficulty==-2) {
@@ -1128,7 +1128,7 @@ namespace offlineSurvivor {
 					printf("O ");
 					continue;
 				} else if(mapG[i][j][playerPosZ]==1) {
-					printf("â–¡");
+					printf("¡õ");
 					continue;
 				} else if(debugEnable&&difficulty==-2) {
 					if(steps[i][j][playerPosZ]>=100)printf("XX");
@@ -1139,42 +1139,42 @@ namespace offlineSurvivor {
 			printf("\n");
 		}
 		if(Floor>1)
-			printf("ä½ åœ¨%dæ¥¼,",playerPosZ);
-		printf("å‰©ä½™æ€æ‰‹æ•°:%3d     ",killersAlive);
+			printf("ÄãÔÚ%dÂ¥,",playerPosZ);
+		printf("Ê£ÓàÉ±ÊÖÊı:%3d     ",killersAlive);
 		printf("HP:%3d ",gameOver);
 		for(int p=0; p<=1+gameOver/200; p++)
-			printf("â– ");
+			printf("¡ö");
 		printf("              \n");
 		switch(playerType) {
 			case 0:
 				break;
 			case 1:
-				printf("å¯ç”¨æ–¹å—æ•°:%d     ",special);
+				printf("¿ÉÓÃ·½¿éÊı:%d     ",special);
 				break;
 			case 2:
-				printf("æ²»ç–—è¿›ç¨‹:%d%c    ",special,'%');
+				printf("ÖÎÁÆ½ø³Ì:%d%c    ",special,'%');
 				for(int p=0; p<special/10; p++)
-					printf("â– ");
+					printf("¡ö");
 				printf("                         ");
 				break;
 			case 3:
-				printf("å‰©ä½™é™·é˜±æ•°:%d     ",special);
+				printf("Ê£ÓàÏİÚåÊı:%d     ",special);
 				break;
 			case 4:
 				if(special<0) {
-					printf("æŠ€èƒ½å†·å´ä¸­:");
+					printf("¼¼ÄÜÀäÈ´ÖĞ:");
 					for(int p=0; p<-special/6; p++)
-						printf("â– ");
+						printf("¡ö");
 					for(int p=20; p>=-special/6; p--)printf("  ");
 				} else if(special>0) {
-					printf("å†²åˆºå‰©ä½™:");
+					printf("³å´ÌÊ£Óà:");
 					for(int p=0; p<special/3; p++)
-						printf("â– ");
+						printf("¡ö");
 					for(int p=20; p>=special/3; p--)printf("  ");
-				} else printf("é—ªç°å†²åˆºå¯ç”¨ã€‚     ");
+				} else printf("ÉÁÏÖ³å´Ì¿ÉÓÃ¡£     ");
 				break;
 			default:
-				printf("æ— æ•ˆçš„è§’è‰²ç±»å‹%dï¼",playerType);
+				printf("ÎŞĞ§µÄ½ÇÉ«ÀàĞÍ%d£¡",playerType);
 		}
 		if(gameOver<200)system("color 4C");
 		else if(gameOver<300)system("color C0");
@@ -1211,7 +1211,7 @@ namespace offlineSurvivor {
 					                                        ||isAnotherTrapHere(i,j,playerPosZ,-1)
 					                                        ||watchable[i-playerPosX+22][j-playerPosY+22]))&&(!ability))
 					          ||((!watchable[i-playerPosX+22][j-playerPosY+22])&&ability&&difficulty>0)) {
-						printf("â– ");
+						printf("¡ö");
 						continue;
 					} else if(isKillerHere(i,j,playerPosZ)) {
 						printf("K ");
@@ -1220,7 +1220,7 @@ namespace offlineSurvivor {
 						printf("O ");
 						continue;
 					} else if(mapG[i][j][playerPosZ]==1) {
-						printf("â–¡");
+						printf("¡õ");
 						continue;
 					} else if(mapG[i][j][playerPosZ]>=2&&mapG[i][j][playerPosZ]<=9) {
 						printf("%dF",10-mapG[i][j][playerPosZ]);
@@ -1233,41 +1233,41 @@ namespace offlineSurvivor {
 				}
 				printf("\n");
 			}
-			printf("æ±‚ç”Ÿè€…åœ¨%dæ¥¼,å‰©ä½™æ€æ‰‹æ•°:%3d     ",playerPosZ,killersAlive);
+			printf("ÇóÉúÕßÔÚ%dÂ¥,Ê£ÓàÉ±ÊÖÊı:%3d     ",playerPosZ,killersAlive);
 			printf("HP:%3d ",gameOver);
 			for(int p=0; p<gameOver/100; p++)
-				printf("â– ");
+				printf("¡ö");
 			printf("                      \n");
 			switch(playerType) {
 				case 0:
 					break;
 				case 1:
-					printf("å¯ç”¨æ–¹å—æ•°:%d     ",special);
+					printf("¿ÉÓÃ·½¿éÊı:%d     ",special);
 					break;
 				case 2:
-					printf("æ²»ç–—è¿›ç¨‹:%d%c    ",special,'%');
+					printf("ÖÎÁÆ½ø³Ì:%d%c    ",special,'%');
 					for(int p=0; p<special/10; p++)
-						printf("â– ");
+						printf("¡ö");
 					printf("                         ");
 					break;
 				case 3:
-					printf("å‰©ä½™é™·é˜±æ•°:%d     ",special);
+					printf("Ê£ÓàÏİÚåÊı:%d     ",special);
 					break;
 				case 4:
 					if(special<0) {
-						printf("æŠ€èƒ½å†·å´ä¸­:");
+						printf("¼¼ÄÜÀäÈ´ÖĞ:");
 						for(int p=0; p<-special/6; p++)
-							printf("â– ");
+							printf("¡ö");
 						for(int p=20; p>=-special/6; p--)printf("  ");
 					} else if(special>0) {
-						printf("å†²åˆºå‰©ä½™:");
+						printf("³å´ÌÊ£Óà:");
 						for(int p=0; p<special/3; p++)
-							printf("â– ");
+							printf("¡ö");
 						for(int p=20; p>=special/3; p--)printf("  ");
-					} else printf("é—ªç°å†²åˆºå¯ç”¨ã€‚     ");
+					} else printf("ÉÁÏÖ³å´Ì¿ÉÓÃ¡£     ");
 					break;
 				default:
-					printf("æ— æ•ˆçš„è§’è‰²ç±»å‹%dï¼",playerType);
+					printf("ÎŞĞ§µÄ½ÇÉ«ÀàĞÍ%d£¡",playerType);
 			}
 			if(gameOver<200)system("color 4C");
 			else if(gameOver<300)system("color C0");
@@ -1290,31 +1290,31 @@ namespace offlineSurvivor {
 		system("cls");
 		COORD posLesson= {12,10};
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¬¢è¿ç© 1 Survivor Versus 2 Killers!  ");
+		printf("»¶Ó­Íæ 1 Survivor Versus 2 Killers!  ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("åœ¨è¿™ä¸ªæ¨¡å¼é‡Œï¼Œä½ è¦é¢å¯¹ä¸€å¤§ç¾¤æ€æ‰‹ã€‚         ");
+		printf("ÔÚÕâ¸öÄ£Ê½Àï£¬ÄãÒªÃæ¶ÔÒ»´óÈºÉ±ÊÖ¡£         ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ€æ‰‹åœ¨æ¸¸æˆä¸­ä¼šä»¥å­—ç¬¦ \"K\"æ¥è¡¨ç¤ºã€‚             ");
+		printf("É±ÊÖÔÚÓÎÏ·ÖĞ»áÒÔ×Ö·û \"K\"À´±íÊ¾¡£             ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¸¸æˆä¸­ä½ ä¼šè¢«ä½œä¸ºç®­å¤´æ ‡è®°ï¼Œä½¿ç”¨WASDæˆ–ä¸Šä¸‹å·¦å³ç§»åŠ¨ã€‚     ");
+		printf("ÓÎÏ·ÖĞÄã»á±»×÷Îª¼ıÍ·±ê¼Ç£¬Ê¹ÓÃWASD»òÉÏÏÂ×óÓÒÒÆ¶¯¡£     ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¸¸æˆä¸­ä¼šéšæœºäº§ç”Ÿé™·é˜±,ç”¨å­—ç¬¦\"O\"è¡¨ç¤ºã€‚               ");
+		printf("ÓÎÏ·ÖĞ»áËæ»ú²úÉúÏİÚå,ÓÃ×Ö·û\"O\"±íÊ¾¡£               ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("ä½ ä¸ä¼šè¢«é™·é˜±ä¼¤å®³,ä½†æ€æ‰‹ä¼šè¢«é™·é˜±æ€æ­»,åŒæ—¶é™·é˜±è¢«ç ´åã€‚         ");
+		printf("Äã²»»á±»ÏİÚåÉËº¦,µ«É±ÊÖ»á±»ÏİÚåÉ±ËÀ,Í¬Ê±ÏİÚå±»ÆÆ»µ¡£         ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¯åè§’è‰²éƒ½æœ‰è‡ªå·±çš„ä¸»åŠ¨æŠ€èƒ½,ç”¨Fæˆ–Spaceæ¿€æ´»ã€‚             ");
+		printf("Ã¿Ãû½ÇÉ«¶¼ÓĞ×Ô¼ºµÄÖ÷¶¯¼¼ÄÜ,ÓÃF»òSpace¼¤»î¡£             ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("ä½ ä¹Ÿå¯ä»¥æºå¸¦è¢«åŠ¨æŠ€èƒ½,ä½†åŒæ—¶ä¹Ÿè¦å—åˆ°è¢«åŠ¨æŠ€èƒ½çš„è´Ÿé¢æ•ˆæœã€‚     ");
+		printf("ÄãÒ²¿ÉÒÔĞ¯´ø±»¶¯¼¼ÄÜ,µ«Í¬Ê±Ò²ÒªÊÜµ½±»¶¯¼¼ÄÜµÄ¸ºÃæĞ§¹û¡£     ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¸¸æˆåˆ†æˆå››ä¸ªéš¾åº¦ï¼Œå¿«æ¥ç©å§ï¼                           ");
+		printf("ÓÎÏ··Ö³ÉËÄ¸öÄÑ¶È£¬¿ìÀ´Íæ°É£¡                           ");
 		_sleep(2500);
 	}
 
@@ -1372,7 +1372,7 @@ ct:
 		_sleep(1000);
 		if(!chooseAbilities())goto ct;
 		system("cls");
-		printf("æŒ‰WASDç§»åŠ¨è§’è‰²,æŒ‰Fé”®æˆ–ç©ºæ ¼ä½¿ç”¨æŠ€èƒ½\n");
+		printf("°´WASDÒÆ¶¯½ÇÉ«,°´F¼ü»ò¿Õ¸ñÊ¹ÓÃ¼¼ÄÜ\n");
 		pthread_t threads[20];
 		int indexes[20],i,loopTimes,loopTimesZ;
 		mapID='0'+abs(rand()*time(NULL))%NUM_MAXMAPNUM;
@@ -1385,14 +1385,14 @@ ct:
 			maper=fopen(mapNames.c_str(),"r");
 		} while(!maper||i<20);
 		if(!readMap()) {
-			printf("é”™è¯¯!åœ°å›¾æ–‡ä»¶æŸå!\nè¯·ä¸æˆ‘ä»¬è”ç³»ä»¥è·å¾—åœ°å›¾æ–‡ä»¶!\n");
+			printf("´íÎó!µØÍ¼ÎÄ¼şËğ»µ!\nÇëÓëÎÒÃÇÁªÏµÒÔ»ñµÃµØÍ¼ÎÄ¼ş!\n");
 			system("pause");
 			exit(-1);
 		}
 		fclose(maper);
 		i=1;
 		system("cls");
-		printf("åŠ è½½ä¸­...\n");
+		printf("¼ÓÔØÖĞ...\n");
 		playerPosX=0,playerPosY=0,playerPosZ=1;
 		do {
 			playerPosX=1+abs(rand()*time(NULL))%20;
@@ -1414,10 +1414,10 @@ ct:
 		_sleep(1000);
 		if(result&&gameOver>0) {
 			system("color 2A");
-			printf("æ¸¸æˆç»“æŸï¼Œä½ èµ¢äº†ï¼\n");
+			printf("ÓÎÏ·½áÊø£¬ÄãÓ®ÁË£¡\n");
 		} else {
 			system("color 4C");
-			printf("æ¸¸æˆç»“æŸï¼Œä½ è¾“äº†ï¼\n");
+			printf("ÓÎÏ·½áÊø£¬ÄãÊäÁË£¡\n");
 		}
 		_sleep(5000);
 		system("cls");
@@ -1488,70 +1488,70 @@ ct:
 		if(gameOver<0)gameOver=0;
 		for(score=0; timescore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d                    \næ—¶é—´å¾—åˆ†ï¼š%d                         \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š%d                     \næŠ€èƒ½å¾—åˆ†ï¼š%d                      \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d                     \nè¡€é‡å¾—åˆ†ï¼š%d                    \n",
+			printf("ÄãµÄµÃ·Ö£º%d                    \nÊ±¼äµÃ·Ö£º%d                         \n»÷°ÜÉ±ÊÖµÃ·Ö£º%d                     \n¼¼ÄÜµÃ·Ö£º%d                      \nÓ®µÃÓÎÏ·µÃ·Ö£º%d                     \nÑªÁ¿µÃ·Ö£º%d                    \n",
 			       score,timescore,beatKillerScore,specialScore,winGameScore,gameOver);
 			score+=50;
 			timescore-=50;
 		}
 		for(; timescore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š%d                     \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š%d              \næŠ€èƒ½å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º%d                     \n»÷°ÜÉ±ÊÖµÃ·Ö£º%d              \n¼¼ÄÜµÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,timescore,beatKillerScore,specialScore,winGameScore,gameOver);
 			score+=1;
 			timescore-=1;
 		}
 		for(; beatKillerScore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                     \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š%d              \næŠ€èƒ½å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                     \n»÷°ÜÉ±ÊÖµÃ·Ö£º%d              \n¼¼ÄÜµÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,beatKillerScore,specialScore,winGameScore,gameOver);
 			score+=50;
 			beatKillerScore-=50;
 		}
 		for(; beatKillerScore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                  \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š%d              \næŠ€èƒ½å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                  \n»÷°ÜÉ±ÊÖµÃ·Ö£º%d              \n¼¼ÄÜµÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,beatKillerScore,specialScore,winGameScore,gameOver);
 			score+=1;
 			beatKillerScore-=1;
 		}
 		for(; specialScore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                 \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š0              \næŠ€èƒ½å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                 \n»÷°ÜÉ±ÊÖµÃ·Ö£º0              \n¼¼ÄÜµÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,specialScore,winGameScore,gameOver);
 			score+=50;
 			specialScore-=50;
 		}
 		for(; specialScore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                   \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š0              \næŠ€èƒ½å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                   \n»÷°ÜÉ±ÊÖµÃ·Ö£º0              \n¼¼ÄÜµÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,specialScore,winGameScore,gameOver);
 			score+=1;
 			specialScore-=1;
 		}
 		for(; winGameScore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                  \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š0              \næŠ€èƒ½å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                  \n»÷°ÜÉ±ÊÖµÃ·Ö£º0              \n¼¼ÄÜµÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,winGameScore,gameOver);
 			score+=50;
 			winGameScore-=50;
 		}
 		for(; winGameScore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0              \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š0              \næŠ€èƒ½å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0              \n»÷°ÜÉ±ÊÖµÃ·Ö£º0              \n¼¼ÄÜµÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,winGameScore,gameOver);
 			score+=0;
 			winGameScore-=0;
 		}
 		for(; gameOver>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0              \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š0              \næŠ€èƒ½å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š0              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0              \n»÷°ÜÉ±ÊÖµÃ·Ö£º0              \n¼¼ÄÜµÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º0              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,gameOver);
 			score+=50;
 			gameOver-=50;
 		}
 		for(; gameOver>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0              \nå‡»è´¥æ€æ‰‹å¾—åˆ†ï¼š0              \næŠ€èƒ½å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š0              \nè¡€é‡å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0              \n»÷°ÜÉ±ÊÖµÃ·Ö£º0              \n¼¼ÄÜµÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º0              \nÑªÁ¿µÃ·Ö£º%d              \n",
 			       score,gameOver);
 			score+=1;
 			gameOver-=1;
@@ -1562,15 +1562,15 @@ ct:
 		for(; scoremiddle>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
 			if(historyMaxScore<=score) {
-				printf("\n      æ–°è®°å½•ï¼\n");
+				printf("\n      ĞÂ¼ÇÂ¼£¡\n");
 				system("color CF");
 				historyMaxScore=score;
 			}
-			printf("ä½ çš„ç­‰çº§ï¼š%d              \nä½ çš„æœ¬æ¬¡å¾—åˆ†ï¼š%d              \nä½ çš„æœ€é«˜å¾—åˆ†è®°å½•ï¼š%d              \n%lld/%lf:",
+			printf("ÄãµÄµÈ¼¶£º%d              \nÄãµÄ±¾´ÎµÃ·Ö£º%d              \nÄãµÄ×î¸ßµÃ·Ö¼ÇÂ¼£º%d              \n%lld/%lf:",
 			       level,score,historyMaxScore,totalScore,(long long)1000*pow(1.1,level));
 			print=int(10*totalScore/(1000*pow(1.1,level)));
 			while(print>0) {
-				printf("â– ");
+				printf("¡ö");
 				print--;
 			}
 			printf("                  ");
@@ -1632,38 +1632,38 @@ namespace offlineKiller {
 
 	void showDifficulties() {
 		system("cls");
-		printf("æŒ‰\"A\"å’Œ\"D\"åˆ‡æ¢éš¾åº¦,æŒ‰Enteré”®ç¡®è®¤\n");
+		printf("°´\"A\"ºÍ\"D\"ÇĞ»»ÄÑ¶È,°´Enter¼üÈ·ÈÏ\n");
 		switch(difficulty) {
 			case -2:
 				system("color 5D");
-				printf("è°ƒè¯•æ¨¡å¼\n");
-				printf("æ€æ‰‹æ•°ï¼š2");
+				printf("µ÷ÊÔÄ£Ê½\n");
+				printf("É±ÊÖÊı£º2");
 				break;
 			case -1:
 				system("color 5D");
-				printf("æ•™ç¨‹æ¨¡å¼\n");
+				printf("½Ì³ÌÄ£Ê½\n");
 				break;
 			case 0:
 				system("color 2A");
-				printf("ç®€å•æ¨¡å¼\n");
-				printf("æ€æ‰‹æ•°ï¼š15");
+				printf("¼òµ¥Ä£Ê½\n");
+				printf("É±ÊÖÊı£º15");
 				break;
 			case 1:
 				system("color 6E");
-				printf("ä¸­ç­‰æ¨¡å¼\n");
-				printf("æ€æ‰‹æ•°ï¼š10");
+				printf("ÖĞµÈÄ£Ê½\n");
+				printf("É±ÊÖÊı£º10");
 				break;
 			case 2:
 				system("color C4");
-				printf("å›°éš¾æ¨¡å¼\n");
-				printf("æ€æ‰‹æ•°ï¼š5");
+				printf("À§ÄÑÄ£Ê½\n");
+				printf("É±ÊÖÊı£º5");
 				break;
 			case 3:
 				system("color 08");
-				printf("åœ°ç‹±æ¨¡å¼\n");
-				printf("æ€æ‰‹æ•°ï¼š2");
+				printf("µØÓüÄ£Ê½\n");
+				printf("É±ÊÖÊı£º2");
 		}
-		if(difficulty>=(level/10)+1)printf("\n    ç­‰çº§ä¸è¶³ï¼%dçº§è§£é”:æ‚¨ç°åœ¨ä¸º%dçº§ã€‚",
+		if(difficulty>=(level/10)+1)printf("\n    µÈ¼¶²»×ã£¡%d¼¶½âËø:ÄúÏÖÔÚÎª%d¼¶¡£",
 			                                   difficulty*10,level);
 	}
 
@@ -2132,7 +2132,7 @@ namespace offlineKiller {
 				if(KEY_DOWN(VK_ESCAPE)) {
 					paused=true;
 					if(gameOver<=0||killersAlive<=0)return killersAlive>0;
-					else if(MessageBox(NULL,"ä½ è¦é€€å‡ºæœ¬å±€æ¸¸æˆå—ï¼Ÿ","æç¤º",
+					else if(MessageBox(NULL,"ÄãÒªÍË³ö±¾¾ÖÓÎÏ·Âğ£¿","ÌáÊ¾",
 					              MB_ICONINFORMATION|MB_YESNO)==IDYES) {
 						gameOver=0;
 						paused=false;
@@ -2141,7 +2141,6 @@ namespace offlineKiller {
 					paused=false;
 				} else _sleep(5);
 				if(!alive[nowKiller]) {
-					if(gameOver<=0||killersAlive<=0)return killersAlive>0&&gameOver<=0;
 					for(nowKiller++; !alive[nowKiller]; nowKiller++) {
 						if(nowKiller>=NUM_KILLERS)nowKiller=0;
 					}
@@ -2372,7 +2371,7 @@ namespace offlineKiller {
 	void *showMap(void *id) {
 		system("cls");
 		system("color F0");
-		printf("              [åŠ è½½ä¸­..]                  \n");
+		printf("              [¼ÓÔØÖĞ..]                  \n");
 		for(int i=0; i<22; i++) {
 			for(int j=0; j<22; j++) {
 				if(playerPosX==i&&playerPosY==j&&killerPosZ[nowKiller]==playerPosZ) {
@@ -2403,57 +2402,57 @@ namespace offlineKiller {
 						printf("K ");
 					continue;
 				} else if(mapG[i][j][killerPosZ[nowKiller]]==-1) {
-					printf("â– ");
+					printf("¡ö");
 					continue;
 				} else if(isAnotherTrapHere(i,j,killerPosZ[nowKiller],-1)) {
 					printf("O ");
 					continue;
 				} else if(mapG[i][j][killerPosZ[nowKiller]]==1) {
-					printf("â–¡");
+					printf("¡õ");
 					continue;
 				} else printf("  ");
 			}
 			printf("\n");
 		}
 		if(Floor>1)
-			printf("ä½ åœ¨%dæ¥¼,æ±‚ç”Ÿè€…åœ¨%dæ¥¼\n",killerPosZ[nowKiller],playerPosZ);
-		printf("å‰©ä½™æ€æ‰‹æ•°:%3d,",killersAlive);
+			printf("ÄãÔÚ%dÂ¥,ÇóÉúÕßÔÚ%dÂ¥\n",killerPosZ[nowKiller],playerPosZ);
+		printf("Ê£ÓàÉ±ÊÖÊı:%3d,",killersAlive);
 		if(autoEnabled[nowKiller])
-			printf("å¼€å¯è‡ªåŠ¨è¡Œèµ°,     ");
+			printf("¿ªÆô×Ô¶¯ĞĞ×ß,     ");
 		printf("\nHP:%3d ",gameOver);
 		for(int p=0; p<=1+gameOver/200; p++)
-			printf("â– ");
+			printf("¡ö");
 		printf("              \n");
 		switch(playerType) {
 			case 0:
 				break;
 			case 1:
-				printf("å¯ç”¨æ–¹å—æ•°:%d     ",special);
+				printf("¿ÉÓÃ·½¿éÊı:%d     ",special);
 				break;
 			case 2:
-				printf("æ²»ç–—è¿›ç¨‹:%d%c    ",special,'%');
+				printf("ÖÎÁÆ½ø³Ì:%d%c    ",special,'%');
 				for(int p=0; p<special/10; p++)
-					printf("â– ");
+					printf("¡ö");
 				printf("                         ");
 				break;
 			case 3:
-				printf("å‰©ä½™é™·é˜±æ•°:%d     ",special);
+				printf("Ê£ÓàÏİÚåÊı:%d     ",special);
 				break;
 			case 4:
 				if(special<0) {
-					printf("æŠ€èƒ½å†·å´ä¸­:");
+					printf("¼¼ÄÜÀäÈ´ÖĞ:");
 					for(int p=0; p<-special/6; p++)
-						printf("â– ");
+						printf("¡ö");
 					for(int p=20; p>=-special/6; p--)printf("  ");
 				} else if(special>0) {
-					printf("å†²åˆºå‰©ä½™:");
+					printf("³å´ÌÊ£Óà:");
 					for(int p=0; p<special/3; p++)
-						printf("â– ");
+						printf("¡ö");
 					for(int p=20; p>=special/3; p--)printf("  ");
-				} else printf("é—ªç°å†²åˆºå¯ç”¨ã€‚     ");
+				} else printf("ÉÁÏÖ³å´Ì¿ÉÓÃ¡£     ");
 				break;
 			default:
-				printf("æ— æ•ˆçš„è§’è‰²ç±»å‹%dï¼",playerType);
+				printf("ÎŞĞ§µÄ½ÇÉ«ÀàĞÍ%d£¡",playerType);
 		}
 		if(gameOver<200)system("color 4C");
 		else if(gameOver<300)system("color C0");
@@ -2490,7 +2489,7 @@ namespace offlineKiller {
 						printf("%dF",10-mapG[i][j][killerPosZ[nowKiller]]);
 						continue;
 					} else if(mapG[i][j][killerPosZ[nowKiller]]==-1) {
-						printf("â– ");
+						printf("¡ö");
 						continue;
 					} else if(isKillerHere(i,j,killerPosZ[nowKiller])) {
 						if(killerPosX[nowKiller]==i&&killerPosY[nowKiller]==j) {
@@ -2502,54 +2501,54 @@ namespace offlineKiller {
 						printf("O ");
 						continue;
 					} else if(mapG[i][j][killerPosZ[nowKiller]]==1) {
-						printf("â–¡");
+						printf("¡õ");
 						continue;
 					} else printf("  ");
 				}
 				printf("\n");
 			}
 			if(Floor>1)
-				printf("ä½ åœ¨%dæ¥¼,æ±‚ç”Ÿè€…åœ¨%dæ¥¼\n",killerPosZ[nowKiller],playerPosZ);
-			printf("å‰©ä½™æ€æ‰‹æ•°:%3d,",killersAlive);
+				printf("ÄãÔÚ%dÂ¥,ÇóÉúÕßÔÚ%dÂ¥\n",killerPosZ[nowKiller],playerPosZ);
+			printf("Ê£ÓàÉ±ÊÖÊı:%3d,",killersAlive);
 			if(autoEnabled[nowKiller])
-				printf("å¼€å¯è‡ªåŠ¨è¡Œèµ°,");
+				printf("¿ªÆô×Ô¶¯ĞĞ×ß,");
 			if(stop[nowKiller])
-				printf("å†·å´ä¸­...");
+				printf("ÀäÈ´ÖĞ...");
 			printf("              ");
 			printf("\nHP:%3d ",gameOver);
 			for(int p=0; p<=1+gameOver/200; p++)
-				printf("â– ");
+				printf("¡ö");
 			printf("              \n");
 			switch(playerType) {
 				case 0:
 					break;
 				case 1:
-					printf("å¯ç”¨æ–¹å—æ•°:%d     ",special);
+					printf("¿ÉÓÃ·½¿éÊı:%d     ",special);
 					break;
 				case 2:
-					printf("æ²»ç–—è¿›ç¨‹:%d%c    ",special,'%');
+					printf("ÖÎÁÆ½ø³Ì:%d%c    ",special,'%');
 					for(int p=0; p<special/10; p++)
-						printf("â– ");
+						printf("¡ö");
 					printf("                         ");
 					break;
 				case 3:
-					printf("å‰©ä½™é™·é˜±æ•°:%d     ",special);
+					printf("Ê£ÓàÏİÚåÊı:%d     ",special);
 					break;
 				case 4:
 					if(special<0) {
-						printf("æŠ€èƒ½å†·å´ä¸­:");
+						printf("¼¼ÄÜÀäÈ´ÖĞ:");
 						for(int p=0; p<-special/6; p++)
-							printf("â– ");
+							printf("¡ö");
 						for(int p=20; p>=-special/6; p--)printf("  ");
 					} else if(special>0) {
-						printf("å†²åˆºå‰©ä½™:");
+						printf("³å´ÌÊ£Óà:");
 						for(int p=0; p<special/3; p++)
-							printf("â– ");
+							printf("¡ö");
 						for(int p=20; p>=special/3; p--)printf("  ");
-					} else printf("é—ªç°å†²åˆºå¯ç”¨ã€‚     ");
+					} else printf("ÉÁÏÖ³å´Ì¿ÉÓÃ¡£     ");
 					break;
 				default:
-					printf("æ— æ•ˆçš„è§’è‰²ç±»å‹%dï¼",playerType);
+					printf("ÎŞĞ§µÄ½ÇÉ«ÀàĞÍ%d£¡",playerType);
 			}
 			if(gameOver<200)system("color 4C");
 			else if(gameOver<300)system("color C0");
@@ -2572,28 +2571,28 @@ namespace offlineKiller {
 		system("cls");
 		COORD posLesson= {12,10};
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¬¢è¿ç© 1 Survivor Versus 2 Killers!  ");
+		printf("»¶Ó­Íæ 1 Survivor Versus 2 Killers!  ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("åœ¨è¿™ä¸ªæ¨¡å¼é‡Œï¼Œä½ è¦æ§åˆ¶ä¸€å¤§ç¾¤æ€æ‰‹æ€æ­»ç”Ÿå­˜è€…ã€‚         ");
+		printf("ÔÚÕâ¸öÄ£Ê½Àï£¬ÄãÒª¿ØÖÆÒ»´óÈºÉ±ÊÖÉ±ËÀÉú´æÕß¡£         ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ€æ‰‹ä»¬åœ¨æ¸¸æˆä¸­ä¼šä»¥å­—ç¬¦ \"K\"æ¥è¡¨ç¤ºã€‚             ");
+		printf("É±ÊÖÃÇÔÚÓÎÏ·ÖĞ»áÒÔ×Ö·û \"K\"À´±íÊ¾¡£             ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¸¸æˆä¸­ç”Ÿå­˜è€…ä¼šè¢«ä½œä¸ºç®­å¤´æ ‡è®°ï¼Œå¸¦æœ‰è‡ªå·±çš„æŠ€èƒ½ã€‚     ");
+		printf("ÓÎÏ·ÖĞÉú´æÕß»á±»×÷Îª¼ıÍ·±ê¼Ç£¬´øÓĞ×Ô¼ºµÄ¼¼ÄÜ¡£     ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¸¸æˆä¸­ä¼šéšæœºäº§ç”Ÿé™·é˜±,ç”¨å­—ç¬¦\"O\"è¡¨ç¤ºã€‚                 ");
+		printf("ÓÎÏ·ÖĞ»áËæ»ú²úÉúÏİÚå,ÓÃ×Ö·û\"O\"±íÊ¾¡£                 ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ€æ‰‹ä¼šè¢«é™·é˜±ä¼¤å®³,åŒæ—¶é™·é˜±è¢«ç ´å,ä½†æ±‚ç”Ÿè€…ä¸ä¼šè¢«é™·é˜±æ€æ­»ã€‚         ");
+		printf("É±ÊÖ»á±»ÏİÚåÉËº¦,Í¬Ê±ÏİÚå±»ÆÆ»µ,µ«ÇóÉúÕß²»»á±»ÏİÚåÉ±ËÀ¡£         ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¯åæ€æ‰‹éƒ½å¯ä»¥è®¾å®šè‡ªåŠ¨è¡Œèµ°,ç”¨Fæˆ–Spaceæ¿€æ´»ã€‚              ");
+		printf("Ã¿ÃûÉ±ÊÖ¶¼¿ÉÒÔÉè¶¨×Ô¶¯ĞĞ×ß,ÓÃF»òSpace¼¤»î¡£              ");
 		_sleep(2500);
 		SetConsoleCursorPosition(hOut,posLesson);
-		printf("æ¸¸æˆåˆ†æˆå››ä¸ªéš¾åº¦ï¼Œå¿«æ¥ç©å§ï¼                           ");
+		printf("ÓÎÏ··Ö³ÉËÄ¸öÄÑ¶È£¬¿ìÀ´Íæ°É£¡                           ");
 		_sleep(2500);
 	}
 
@@ -2648,17 +2647,17 @@ namespace offlineKiller {
 		_sleep(1000);
 		ability=rand()%2?(rand()*rand()%time(NULL)+rand()*time(NULL))%NUM_MAXABILITYNUM:-1;
 		system("cls");
-		printf("æŒ‰WASDç§»åŠ¨è§’è‰²,æŒ‰Qé”®æˆ–Eåˆ‡æ¢æ§åˆ¶æ€æ‰‹,Spaceå¼€å¯è‡ªåŠ¨è¡Œèµ°\n");
+		printf("°´WASDÒÆ¶¯½ÇÉ«,°´Q¼ü»òEÇĞ»»¿ØÖÆÉ±ÊÖ,Space¿ªÆô×Ô¶¯ĞĞ×ß\n");
 		pthread_t threads[20],printMapT,survirorT;
 		int indexes[20],i,loopTimes,loopTimesZ;
 		if(!readMap()) {
-			printf("é”™è¯¯!åœ°å›¾æ–‡ä»¶æŸå!\nè¯·ä¸æˆ‘ä»¬è”ç³»ä»¥è·å¾—åœ°å›¾æ–‡ä»¶!\n");
+			printf("´íÎó!µØÍ¼ÎÄ¼şËğ»µ!\nÇëÓëÎÒÃÇÁªÏµÒÔ»ñµÃµØÍ¼ÎÄ¼ş!\n");
 			system("pause");
 			exit(-1);
 		}
 		i=1;
 		system("cls");
-		printf("åŠ è½½ä¸­...\n");
+		printf("¼ÓÔØÖĞ...\n");
 		playerPosX=0,playerPosY=0,playerPosZ=1;
 		do {
 			playerPosX=1+abs(rand()*time(NULL))%20;
@@ -2681,10 +2680,10 @@ namespace offlineKiller {
 		_sleep(1000);
 		if(result&&gameOver<=0) {
 			system("color 2A");
-			printf("æ¸¸æˆç»“æŸï¼Œä½ èµ¢äº†ï¼\n");
+			printf("ÓÎÏ·½áÊø£¬ÄãÓ®ÁË£¡\n");
 		} else {
 			system("color 4C");
-			printf("æ¸¸æˆç»“æŸï¼Œä½ è¾“äº†ï¼\n");
+			printf("ÓÎÏ·½áÊø£¬ÄãÊäÁË£¡\n");
 		}
 		_sleep(5000);
 		system("cls");
@@ -2758,56 +2757,56 @@ namespace offlineKiller {
 		if(gameOver<0)gameOver=0;
 		for(score=0; timescore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d                    \næ—¶é—´å¾—åˆ†ï¼š%d                         \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š%d                     \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d                     \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d                    \n",
+			printf("ÄãµÄµÃ·Ö£º%d                    \nÊ±¼äµÃ·Ö£º%d                         \n¹¥»÷½ÇÉ«µÃ·Ö£º%d                     \nÓ®µÃÓÎÏ·µÃ·Ö£º%d                     \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d                    \n",
 			       score,timescore,beatKillerScore,winGameScore,gameOver);
 			score+=50;
 			timescore-=50;
 		}
 		for(; timescore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š%d                     \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º%d                     \n¹¥»÷½ÇÉ«µÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,timescore,beatKillerScore,winGameScore,gameOver);
 			score+=1;
 			timescore-=1;
 		}
 		for(; beatKillerScore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                     \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                     \n¹¥»÷½ÇÉ«µÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,beatKillerScore,winGameScore,gameOver);
 			score+=50;
 			beatKillerScore-=50;
 		}
 		for(; beatKillerScore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                  \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š%d              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                  \n¹¥»÷½ÇÉ«µÃ·Ö£º%d              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,beatKillerScore,winGameScore,gameOver);
 			score+=1;
 			beatKillerScore-=1;
 		}
 		for(; winGameScore>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0                  \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0                  \n¹¥»÷½ÇÉ«µÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,winGameScore,gameOver);
 			score+=50;
 			winGameScore-=50;
 		}
 		for(; winGameScore>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0              \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š%d              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0              \n¹¥»÷½ÇÉ«µÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º%d              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,winGameScore,gameOver);
 			score+=0;
 			winGameScore-=0;
 		}
 		for(; gameOver>=50;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0              \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š0              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0              \n¹¥»÷½ÇÉ«µÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º0              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,gameOver);
 			score+=50;
 			gameOver-=50;
 		}
 		for(; gameOver>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
-			printf("ä½ çš„å¾—åˆ†ï¼š%d              \næ—¶é—´å¾—åˆ†ï¼š0              \næ”»å‡»è§’è‰²å¾—åˆ†ï¼š0              \nèµ¢å¾—æ¸¸æˆå¾—åˆ†ï¼š0              \nå‰©ä½™æ€æ‰‹å¾—åˆ†ï¼š%d              \n",
+			printf("ÄãµÄµÃ·Ö£º%d              \nÊ±¼äµÃ·Ö£º0              \n¹¥»÷½ÇÉ«µÃ·Ö£º0              \nÓ®µÃÓÎÏ·µÃ·Ö£º0              \nÊ£ÓàÉ±ÊÖµÃ·Ö£º%d              \n",
 			       score,gameOver);
 			score+=1;
 			gameOver-=1;
@@ -2818,15 +2817,15 @@ namespace offlineKiller {
 		for(; scoremiddle>0;) {
 			SetConsoleCursorPosition(hOut,posStart);
 			if(historyMaxScore<=score) {
-				printf("\n      æ–°è®°å½•ï¼\n");
+				printf("\n      ĞÂ¼ÇÂ¼£¡\n");
 				system("color CF");
 				historyMaxScore=score;
 			}
-			printf("ä½ çš„ç­‰çº§ï¼š%d              \nä½ çš„æœ¬æ¬¡å¾—åˆ†ï¼š%d              \nä½ çš„æœ€é«˜å¾—åˆ†è®°å½•ï¼š%d              \n%lld/%lf:",
+			printf("ÄãµÄµÈ¼¶£º%d              \nÄãµÄ±¾´ÎµÃ·Ö£º%d              \nÄãµÄ×î¸ßµÃ·Ö¼ÇÂ¼£º%d              \n%lld/%lf:",
 			       level,score,historyMaxScore,totalScore,(long long)1000*pow(1.1,level));
 			print=int(10*totalScore/(1000*pow(1.1,level)));
 			while(print>0) {
-				printf("â– ");
+				printf("¡ö");
 				print--;
 			}
 			printf("                  ");
@@ -2868,7 +2867,7 @@ void runGame() {
 			system("color 5D");
 			system("cls");
 			SetConsoleCursorPosition(hOut,posBegin);
-			printf("è¿™ä¸ªæ¸¸æˆæ¨¡å¼æ­£åœ¨åˆ¶ä½œä¸­(ã€ƒ'â–½'ã€ƒ)");
+			printf("Õâ¸öÓÎÏ·Ä£Ê½ÕıÔÚÖÆ×÷ÖĞ(¡¨'¨Œ'¡¨)");
 			SetConsoleCursorPosition(hOut,posPause);
 			system("pause");
 			system("cls");
@@ -2880,23 +2879,23 @@ void runGame() {
 
 void showgamemode() {
 	system("cls");
-	printf("æŒ‰\"A\"å’Œ\"D\"åˆ‡æ¢éš¾åº¦,æŒ‰Enteré”®ç¡®è®¤\n");
+	printf("°´\"A\"ºÍ\"D\"ÇĞ»»ÄÑ¶È,°´Enter¼üÈ·ÈÏ\n");
 	switch(gamemode) {
 		case 0:
 			system("color 2A");
-			printf("ç¦»çº¿æ±‚ç”Ÿè€…\n");
+			printf("ÀëÏßÇóÉúÕß\n");
 			break;
 		case 1:
 			system("color C4");
-			printf("ç¦»çº¿æ€æ‰‹\n");
+			printf("ÀëÏßÉ±ÊÖ\n");
 			break;
 		case 2:
 			system("color 2A");
-			printf("åœ¨çº¿æ±‚ç”Ÿè€…\n");
+			printf("ÔÚÏßÇóÉúÕß\n");
 			break;
 		case 3:
 			system("color C4");
-			printf("åœ¨çº¿æ€æ‰‹\n");
+			printf("ÔÚÏßÉ±ÊÖ\n");
 	}
 }
 
@@ -2919,7 +2918,7 @@ int main() {
 	hOut=GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_CURSOR_INFO cursor_info= {1,0};
 	SetConsoleCursorInfo(hOut, &cursor_info);
-	SetConsoleTitle("æŸäººçš„æ¬¢ä¹å°æ¸¸æˆ:\"ä¸€ç†Šæˆ˜äºŒç‹—\"");
+	SetConsoleTitle("Ä³ÈËµÄ»¶ÀÖĞ¡ÓÎÏ·:\"Ò»ĞÜÕ½¶ş¹·\"");
 	SetConsoleScreenBufferSize(hOut,size);
 restart:
 	system("color F0");
@@ -2928,7 +2927,7 @@ restart:
 	printf("1 Survivor VS 2 Killers");
 	SetConsoleCursorPosition(hOut,posPause);
 	system("pause");
-	if(KEY_DOWN(VK_ESCAPE))if(MessageBox(NULL,"ä½ ç¡®å®šè¦é€€å‡ºå—ï¼Ÿ","æç¤º",
+	if(KEY_DOWN(VK_ESCAPE))if(MessageBox(NULL,"ÄãÈ·¶¨ÒªÍË³öÂğ£¿","ÌáÊ¾",
 		                                     MB_ICONQUESTION|MB_YESNO)==IDYES)return 0;
 	chooseGamemode();
 	runGame();

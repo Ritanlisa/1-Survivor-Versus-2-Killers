@@ -10,7 +10,7 @@ PrivateResource=1SV2K(x64)_private.rc
 ResourceIncludes=
 MakeIncludes=
 Compiler=
-CppCompiler=
+CppCompiler=_@@_
 Linker=
 IsCpp=1
 Icon=1SV2K(x86).ico
@@ -33,20 +33,20 @@ UnitCount=1
 
 [VersionInfo]
 Major=2
-Minor=3
-Release=2
-Build=8
+Minor=5
+Release=1
+Build=1
 LanguageID=2052
 CharsetID=1252
 CompanyName=Immortal Rover Games
-FileVersion=2.3.2.8
+FileVersion=2.5.1.1
 FileDescription=Ò»ÐÜÕ½¶þ¹·
 InternalName=1SV2K
 LegalCopyright=Immortal Rover Games Studio
 LegalTrademarks=Immortal Rover Games Studio
 OriginalFilename=1SV2K
 ProductName=1SV2K
-ProductVersion=2.3.2.8
+ProductVersion=2.5.1.1
 AutoIncBuildNr=1
 SyncProduct=1
 

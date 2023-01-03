@@ -1,0 +1,23 @@
+﻿  1SV2K.cpp
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1232,19): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1250,25): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1300,14): warning C4566: 由通用字符名称“\u25AA”表示的字符不能在当前代码页(936)中表示出来
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1351,28): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1581,63): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1584,54): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1690,52): warning C4244: “-=”: 从“double”转换到“unsigned __int64”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1449,7): warning C4101: “indexes”: 未引用的局部变量
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2568,19): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2571,25): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2678,28): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2897,63): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2900,54): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2993,52): warning C4244: “-=”: 从“double”转换到“unsigned __int64”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2769,7): warning C4101: “indexes”: 未引用的局部变量
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(3072,12): warning C4244: “参数”: 从“time_t”转换到“unsigned int”，可能丢失数据
+  正在生成代码
+  1 of 212 functions ( 0.5%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    2 functions had inline decision re-evaluated but remain unchanged
+  已完成代码的生成
+  1SV2K.vcxproj -> C:\Users\Ritanlisa\source\repos\1SV2K\x64\Release\1SV2K.exe

@@ -1,147 +1,189 @@
-#pragma comment(linker, "/STACK:10240000000,10240000000") 
-#include<bits/stdc++.h>
+Ôªø#pragma comment(linker, "/STACK:20480000000,20480000000") 
+#define _CRT_SECURE_NO_WARNINGS
+#define NUM_THREADS 30
+#define TASK_UNMAPPED_BASE		0x80000000
+//#define TASK_SIZE				0xf000000000000000
+
+#include<thread>
 #include<iostream>
 #include<unistd.h>
 #include<stdlib.h>
-#include<pthread.h>
 #include<math.h>
 #include<windows.h>
 #include<conio.h>
 #include<string>
 #include<ctime>
 #include<iomanip>
-#define NUM_MAXMAPNUM 5
+
+#define NUM_MAXMAPNUM 20
 #define NUM_MAXDIFFICULTY 3
 #define NUM_MAXPLAYERTYPE 4
 #define NUM_MAXABILITYNUM 3
 #define NUM_MAXMODENUM 4
+
+#define TRAP_WEIGHT_PRE_CLOSE(Difficulty) 10 + difficulty * 5
+#define TRAP_WEIGHT_PRE_FAR(Difficulty) 90 + difficulty * 20
+#define TRAP_FAR_DIST(Difficulty) 20 - difficulty * 5
+#define TRAP_WEIGHT_POST(Difficulty) 20 + difficulty * 5
+#define POST_REMAIN(Difficulty) difficulty + 2
+#define KILLER_WEIGHT(Difficulty) 100 + difficulty * 15
+#define WALL_WEIGHT(Difficulty) 500
+#define FLOOR_WEIGHT(Difficulty) 6
+#define HEALTH_PER_KILL(Difficulty) 100
+
+#define KILLER_SPEED(Difficulty) 475 - difficulty * 50
+#define SURVIVOR_SPEED(Difficulty) 400
+#define KILLER_FLOOR(Difficulty) 1500 + difficulty * 500
+#define KILLER_STUN(Difficulty) 9000 + difficulty * 2000
+#define MAX_TRAP(Difficulty) 10 - 2 * Difficulty
+
 #define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1:0)
 using namespace std;
-COORD posBegin= {20,7},posPause= {21,9},size= {80,30};
-long startTime,nowTime;
-void* voidptr;
-FILE *maper,*debuger,*scoreboard,*achievement;
 
-int decay=1,bloodkill,historyMaxScore,NUM_KILLERS,NUM_VIEWMINRADIUS=2,Floor=0,attactCount,gamemode,
-    ability,NUM_VIEWMAXRADIUS,level,beatKillerScore,winGameScore=0,specialScore=0,nowKiller,lastdirection[20],
-                                                    timescore,mapG[22][22][9],debugTimes=0,killerPosX[20],killerPosY[20],
-                                                                              killerPosZ[20],killerDirection[20],trapPosX[40],trapPosY[40],trapPosZ[40],
-                                                                              playerPosX,playerPosY,playerPosZ,direction=2,playerType,gameOver,special=0,
-                                                                                                               score=0,difficulty=0,killsWithoutHurt=0,killsByBlock=0,killsByTraps=0,
-                                                                                                               killersAlive,steps[22][22][9],stepSurviror[22][22][9],mapID=49+abs(rand()*time(NULL))%NUM_MAXMAPNUM,
-                                                                                                                                                                     historyX,historyY,historyZ;
-bool achieveNotHurt=false,achieveBlock=false,achieveTraps=false,start=false,
-     debugging=false,result,watchable[44][44],killersSleep,paused,debugEnable=false,
-     resetedStep[22][22][9],resetedSurvirorStep[22][22][9],autoEnabled[20],alive[20],stop[20];
-unsigned long long achievementsUnlockedNow=0,totalScore;
+COORD posBegin = { 20,7 }, posPause = { 21,9 }, Size = { 80,30 };
+long startTime, nowTime;
+FILE* maper, * debuger, * scoreboard, * achievement;
+
+int Decay = 1, bloodkill, historyMaxScore = 0, NUM_KILLERS, NUM_VIEWMINRADIUS = 2, Floor = 0, attactCount, gamemode,
+ability, NUM_VIEWMAXRADIUS, level = 0, beatKillerScore, winGameScore = 0, specialScore = 0, nowKiller, lastdirection[20],
+timescore, mapG[22][22][9], debugTimes = 0, killerPosX[20], killerPosY[20],
+killerPosZ[20], killerDirection[20], trapPosX[40], trapPosY[40], trapPosZ[40],
+playerPosX, playerPosY, playerPosZ, direction = 2, playerType, gameOver, special = 0,
+score = 0, difficulty = 0, killsWithoutHurt = 0, killsByBlock = 0, killsByTraps = 0,
+killersAlive, steps[22][22][9], stepSurviror[22][22][9], stepsUpdate[22][22][9], //mapID = 49 + abs(rand() * time(NULL)) % NUM_MAXMAPNUM,
+historyX, historyY, historyZ,
+DebugZ = 0,
+PlayerTargetX = -1, PlayerTargetY = -1;
+bool achieveNotHurt = false, achieveBlock = false, achieveTraps = false, start = false,
+debugging = false, result, watchable[44][44], killersSleep, paused, debugEnable = false,
+resetedStep[22][22][9], resetedSurvirorStep[22][22][9], autoEnabled[20], alive[20], stop[20], playerAutoRoad[22][22] = { false };
+unsigned long long achievementsUnlockedNow = 0, totalScore=0;
 string mapNames;
-COORD posStart= {0,0};
-HANDLE hOut=GetStdHandle(STD_OUTPUT_HANDLE);
+COORD posStart = { 0,0 };
+HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
-
-void _debug(const char* func,int line) {
-	if(!debugEnable)return;
+void _debug(const char* func, int line) {
+	if (!debugEnable)return;
 	FILE* fileptr;
-	fileptr=fopen(func,"a");
-	fprintf(fileptr,"[%2ld:%2ld:%2ld]",nowTime/3600,(nowTime/60)%60,nowTime%60);
-	fprintf(fileptr,":%d,playerType=%d",line,playerType);
-	fprintf(fileptr,"\n");
+	fileptr = fopen(func, "a");
+	fprintf(fileptr, "[%2ld:%2ld:%2ld]", nowTime / 3600, (nowTime / 60) % 60, nowTime % 60);
+	fprintf(fileptr, ":%d,playerType=%d", line, playerType);
+	fprintf(fileptr, "\n");
 	fclose(fileptr);
 }
 
 bool color(WORD wAttr) {
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	if(hConsole == INVALID_HANDLE_VALUE)
+	if (hConsole == INVALID_HANDLE_VALUE)
 		return false;
 	return SetConsoleTextAttribute(hConsole, wAttr);
 }
 
-void _debug(const char* func,int line,const char *__format,...) {
-	if(!debugEnable)return;
+void _debug(const char* func, int line, const char* __format, ...) {
+	if (!debugEnable)return;
 	FILE* fileptr;
-	fileptr=fopen(func,"a");
-	fprintf(fileptr,"[%2ld:%2ld:%2ld]",nowTime/3600,(nowTime/60)%60,nowTime%60);
-	fprintf(fileptr,":%d,",line);
-	fprintf(fileptr," message:");
+	fileptr = fopen(func, "a");
+	fprintf(fileptr, "[%2ld:%2ld:%2ld]", nowTime / 3600, (nowTime / 60) % 60, nowTime % 60);
+	fprintf(fileptr, ":%d,", line);
+	fprintf(fileptr, " message:");
 	va_list vpr;
-	va_start(vpr,__format);
-	vfprintf(fileptr,__format,vpr);
+	va_start(vpr, __format);
+	vfprintf(fileptr, __format, vpr);
 	va_end(vpr);
-	fprintf(fileptr,"\n");
+	fprintf(fileptr, "\n");
 	fclose(fileptr);
 }
 
-bool isKillerHere(int PosX,int PosY,int layer) {
-	for(int i=0; i<NUM_KILLERS; i++)
-		if(PosX==killerPosX[i]&&PosY==killerPosY[i]&&layer==killerPosZ[i]&&alive[i])return true;
+POINT getMouse() {
+	HWND h = GetForegroundWindow();
+	CONSOLE_FONT_INFO consoleCurrentFont;
+	HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	POINT p, out;
+	GetCursorPos(&p);
+	ScreenToClient(h, &p);
+	GetCurrentConsoleFont(hOutput, FALSE, &consoleCurrentFont);
+	out.x = p.x /= consoleCurrentFont.dwFontSize.X;
+	out.y = p.y /= consoleCurrentFont.dwFontSize.Y;
+	return out;
+}
+
+bool isKillerHere(int PosX, int PosY, int layer) {
+	for (int i = 0; i < NUM_KILLERS; i++)
+		if (PosX == killerPosX[i] && PosY == killerPosY[i] && layer == killerPosZ[i] && alive[i])return true;
 	return false;
 }
 
-int killerHereID(int PosX,int PosY,int layer) {
-	for(int i=0; i<NUM_KILLERS; i++)
-		if(PosX==killerPosX[i]&&PosY==killerPosY[i]&&layer==killerPosZ[i]&&alive[i])return i;
+int killerHereID(int PosX, int PosY, int layer) {
+	for (int i = 0; i < NUM_KILLERS; i++)
+		if (PosX == killerPosX[i] && PosY == killerPosY[i] && layer == killerPosZ[i] && alive[i])return i;
 	return -1;
 }
 
-bool isAnotherTrapHere(int PosX,int PosY,int layer,int ID) {
-	for(int i=0; i<=NUM_KILLERS*2; i++)
-		if(PosX==trapPosX[i]&&PosY==trapPosY[i]&&layer==trapPosZ[i]&&ID!=i)return true;
+bool isAnotherTrapHere(int PosX, int PosY, int layer, int ID) {
+	for (int i = 0; i <= NUM_KILLERS * 2; i++)
+		if (PosX == trapPosX[i] && PosY == trapPosY[i] && layer == trapPosZ[i] && ID != i)return true;
 	return false;
 }
 
-bool isAnotherKillerHere(int PosX,int PosY,int layer,int ID) {
-	for(int i=0; i<NUM_KILLERS; i++)
-		if(PosX==killerPosX[i]&&PosY==killerPosY[i]&&layer==killerPosZ[i]
-		        &&ID!=i)return true;
+bool isAnotherKillerHere(int PosX, int PosY, int layer, int ID) {
+	for (int i = 0; i < NUM_KILLERS; i++)
+		if (PosX == killerPosX[i] && PosY == killerPosY[i] && layer == killerPosZ[i]
+			&& ID != i)return true;
 	return false;
 }
 
-bool isPlayerAround(int playerX,int playerY,int playerLayer,int PosX,int PosY,
-                    int layer) {
-	return playerLayer==layer&&((PosX==playerX&&abs(PosY-playerY)<2)||(PosY==playerY
-	                            &&abs(PosX-playerX)<2));
+bool isPlayerAround(int playerX, int playerY, int playerLayer, int PosX, int PosY,
+	int layer) {
+	return playerLayer == layer && ((PosX == playerX && abs(PosY - playerY) < 2) || (PosY == playerY
+		&& abs(PosX - playerX) < 2));
 }
 
-void _debug(const char* func,int line,int x,int y) {
-	if(!debugEnable)return;
+void _debug(const char* func, int line, int x, int y) {
+	if (!debugEnable)return;
 	FILE* fileptr;
-	fileptr=fopen(func,"a");
-	fprintf(fileptr,"              [%2ld:%2ld:%2ld]                  \n",nowTime/3600,
-	        (nowTime/60)%60,nowTime%60);
-	for(int l=1; l<=Floor; l++) {
-		for(int i=0; i<22; i++) {
-			for(int j=0; j<22; j++) {
-				if(playerPosX==i&&playerPosY==j&&l==playerPosZ) {
-					fprintf(fileptr,"><");
+	fileptr = fopen(func, "a");
+	fprintf(fileptr, "              [%2ld:%2ld:%2ld]                  \n", nowTime / 3600,
+		(nowTime / 60) % 60, nowTime % 60);
+	for (int l = 1; l <= Floor; l++) {
+		for (int i = 0; i < 22; i++) {
+			for (int j = 0; j < 22; j++) {
+				if (playerPosX == i && playerPosY == j && l == playerPosZ) {
+					fprintf(fileptr, "><");
 					continue;
-				} else if(mapG[i][j][l]==-1||((!(isKillerHere(i,j,l)||isAnotherTrapHere(i,j,l,-1)
-				                                 ||watchable[i-playerPosX+22][j-playerPosY+22]))&&(!ability))
-				          ||((!watchable[i-playerPosX+22][j-playerPosY+22])&&ability&&difficulty>0)) {
-					fprintf(fileptr,"°ˆ");
+				}
+				else if (mapG[i][j][l] == -1 || ((!(isKillerHere(i, j, l) || isAnotherTrapHere(i, j, l, -1)
+					|| watchable[i - playerPosX + 22][j - playerPosY + 22])) && (!ability))
+					|| ((!watchable[i - playerPosX + 22][j - playerPosY + 22]) && ability && difficulty > 0)) {
+					fprintf(fileptr, "‚ñ†");
 					continue;
-				} else if(isKillerHere(i,j,l)) {
-					fprintf(fileptr,"K ");
+				}
+				else if (isKillerHere(i, j, l)) {
+					fprintf(fileptr, "K ");
 					continue;
-				} else if(isAnotherTrapHere(i,j,l,-1)) {
-					fprintf(fileptr,"O ");
+				}
+				else if (isAnotherTrapHere(i, j, l, -1)) {
+					fprintf(fileptr, "O ");
 					continue;
-				} else if(mapG[i][j][l]==1) {
-					fprintf(fileptr,"°ı");
+				}
+				else if (mapG[i][j][l] == 1) {
+					fprintf(fileptr, "‚ñ°");
 					continue;
-				} else if(mapG[i][j][l]>=2&&mapG[i][j][l]<=9) {
-					fprintf(fileptr,"%dF",10-mapG[i][j][l]);
+				}
+				else if (mapG[i][j][l] >= 2 && mapG[i][j][l] <= 9) {
+					fprintf(fileptr, "%dF", 10 - mapG[i][j][l]);
 					continue;
-				} else {
-					if(steps[i][j][l]>=100)fprintf(fileptr,"XX");
-					else fprintf(fileptr,"%2d",steps[i][j][l]);
+				}
+				else {
+					if (steps[i][j][l] >= 100)fprintf(fileptr, "XX");
+					else fprintf(fileptr, "%2d", steps[i][j][l]);
 					continue;
 				}
 			}
-			fprintf(fileptr,"\n");
+			fprintf(fileptr, "\n");
 		}
-		fprintf(fileptr,"%d¬•\n",l);
+		fprintf(fileptr, "%dÊ•º\n", l);
 	}
-	fprintf(fileptr,"\n\n\n");
+	fprintf(fileptr, "\n\n\n");
 	fclose(fileptr);
 }
 
@@ -152,1447 +194,1509 @@ namespace offlineSurvivor {
 
 	void printAchieveAchievement(int achievementID) {
 		system("cls");
-		printf("πßœ≤£∫ƒ˙“—Ω‚À¯≥…æÕ£∫\n");
-		switch(achievementID) {
-			case 1:
-				printf("            ’‚√¥ºÚµ•£¨”–ƒ—∂»¬£ø\n");
-				printf("Ω‚À¯Ãıº˛£∫”Æµ√“ªæ÷ §¿˚\n");
-				break;
-			case 2:
-				printf("               œ›⁄Â «Œ“º“\n");
-				printf("Ω‚À¯Ãıº˛£∫¡¨–¯¡Ω¥Œ”√œ›⁄Â…±À¿…± ÷\n");
-				break;
-			case 3:
-				printf("               √ª“‚Àº£¨Ã´ºÚµ•\n");
-				printf("Ω‚À¯Ãıº˛£∫”Æµ√“ªæ÷÷–µ»ƒ£ Ω\n");
-				break;
-			case 4:
-				printf("               ¥Û¡¶ ø¡¶º‹\n");
-				printf("Ω‚À¯Ãıº˛£∫¡¨–¯¡Ω¥Œ”√∑ΩøÈ…±À¿…± ÷\n");
-				break;
-			case 5:
-				printf("               ”–±æ ¬‘Ÿƒ—µ„\n");
-				printf("Ω‚À¯Ãıº˛£∫”Æµ√“ªæ÷¿ßƒ—ƒ£ Ω\n");
-				break;
-			case 6:
-				printf("              Œ“◊‘¥¯π‚ª∑≈¬π˝À≠\n");
-				printf("Ω‚À¯Ãıº˛£∫‘⁄≤ª±ªπ•ª˜µƒ«Èøˆœ¬ª˜…±¡ΩŒª…± ÷\n");
-				break;
-			case 7:
-				printf("            À°Œ“÷±—‘’‚ «∏ˆ¿¨ª¯”Œœ∑\n");
-				printf("Ω‚À¯Ãıº˛£∫”Æµ√“ªæ÷µÿ”¸ƒ£ Ω\n");
-				break;
-			case 8:
-				printf("            “ªµ∂’∂∂‘Œ“µƒπ‚ª∑Œﬁ–ß\n");
-				printf("Ω‚À¯Ãıº˛£∫”√ƒ¨∞ß”Æµ√“ªæ÷µÿ”¸ƒ£ Ω\n");
-				break;
-			case 9:
-				printf("                 Õ¥À¿∏ˆ»À\n");
-				printf("Ω‚À¯Ãıº˛£∫”√“ª∆“°∞⁄”Æµ√“ªæ÷µÿ”¸ƒ£ Ω\n");
-				break;
-			case 10:
-				printf("                 “Ω’ﬂ» –ƒ\n");
-				printf("Ω‚À¯Ãıº˛£∫”√ƒ¨∞ß∫Õ“Ω…˙”Æµ√“ªæ÷µÿ”¸ƒ£ Ω\n");
-				break;
-			case 11:
-				printf("                 À‰∞‹”Ã»Ÿ\n");
-				printf("Ω‚À¯Ãıº˛£∫“ªæ÷µÿ”¸ƒ£ Ωº·≥÷6∑÷÷”“‘…œ≤¢ ß∞‹\n");
-				break;
-			case 12:
-				printf("                 ºËø‡◊øæ¯\n");
-				printf("Ω‚À¯Ãıº˛£∫“ªæ÷µÿ”¸ƒ£ Ωº·≥÷6∑÷÷”“‘…œ≤¢ªÒ §\n");
-				break;
-			case 13:
-				printf("          –°—ß…˙∂ºø…“‘ÕÊπ˝µƒ”Œœ∑\n");
-				printf("Ω‚À¯Ãıº˛£∫”√ƒ¨∞ß∫Õ–°—ß…˙”Æµ√“ªæ÷µÿ”¸ƒ£ Ω\n");
+		printf("ÊÅ≠ÂñúÔºöÊÇ®Â∑≤Ëß£ÈîÅÊàêÂ∞±Ôºö\n");
+		switch (achievementID) {
+		case 1:
+			printf("            Ëøô‰πàÁÆÄÂçïÔºåÊúâÈöæÂ∫¶ÂêóÔºü\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöËµ¢Âæó‰∏ÄÂ±ÄËÉúÂà©\n");
+			break;
+		case 2:
+			printf("               Èô∑Èò±ÊòØÊàëÂÆ∂\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöËøûÁª≠‰∏§Ê¨°Áî®Èô∑Èò±ÊùÄÊ≠ªÊùÄÊâã\n");
+			break;
+		case 3:
+			printf("               Ê≤°ÊÑèÊÄùÔºåÂ§™ÁÆÄÂçï\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöËµ¢Âæó‰∏ÄÂ±Ä‰∏≠Á≠âÊ®°Âºè\n");
+			break;
+		case 4:
+			printf("               Â§ßÂäõÂ£´ÂäõÊû∂\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöËøûÁª≠‰∏§Ê¨°Áî®ÊñπÂùóÊùÄÊ≠ªÊùÄÊâã\n");
+			break;
+		case 5:
+			printf("               ÊúâÊú¨‰∫ãÂÜçÈöæÁÇπ\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöËµ¢Âæó‰∏ÄÂ±ÄÂõ∞ÈöæÊ®°Âºè\n");
+			break;
+		case 6:
+			printf("              ÊàëËá™Â∏¶ÂÖâÁéØÊÄïËøáË∞Å\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöÂú®‰∏çË¢´ÊîªÂáªÁöÑÊÉÖÂÜµ‰∏ãÂáªÊùÄ‰∏§‰ΩçÊùÄÊâã\n");
+			break;
+		case 7:
+			printf("            ÊÅïÊàëÁõ¥Ë®ÄËøôÊòØ‰∏™ÂûÉÂúæÊ∏∏Êàè\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöËµ¢Âæó‰∏ÄÂ±ÄÂú∞Áã±Ê®°Âºè\n");
+			break;
+		case 8:
+			printf("            ‰∏ÄÂàÄÊñ©ÂØπÊàëÁöÑÂÖâÁéØÊó†Êïà\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöÁî®ÈªòÂìÄËµ¢Âæó‰∏ÄÂ±ÄÂú∞Áã±Ê®°Âºè\n");
+			break;
+		case 9:
+			printf("                 ÁóõÊ≠ª‰∏™‰∫∫\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöÁî®‰∏ÄËµ∑ÊëáÊëÜËµ¢Âæó‰∏ÄÂ±ÄÂú∞Áã±Ê®°Âºè\n");
+			break;
+		case 10:
+			printf("                 ÂåªËÄÖ‰ªÅÂøÉ\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöÁî®ÈªòÂìÄÂíåÂåªÁîüËµ¢Âæó‰∏ÄÂ±ÄÂú∞Áã±Ê®°Âºè\n");
+			break;
+		case 11:
+			printf("                 ËôΩË¥•ÁäπËç£\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂Ôºö‰∏ÄÂ±ÄÂú∞Áã±Ê®°ÂºèÂùöÊåÅ6ÂàÜÈíü‰ª•‰∏äÂπ∂Â§±Ë¥•\n");
+			break;
+		case 12:
+			printf("                 Ëâ∞Ëã¶ÂçìÁªù\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂Ôºö‰∏ÄÂ±ÄÂú∞Áã±Ê®°ÂºèÂùöÊåÅ6ÂàÜÈíü‰ª•‰∏äÂπ∂Ëé∑ËÉú\n");
+			break;
+		case 13:
+			printf("          Â∞èÂ≠¶ÁîüÈÉΩÂèØ‰ª•Áé©ËøáÁöÑÊ∏∏Êàè\n");
+			printf("Ëß£ÈîÅÊù°‰ª∂ÔºöÁî®ÈªòÂìÄÂíåÂ∞èÂ≠¶ÁîüËµ¢Âæó‰∏ÄÂ±ÄÂú∞Áã±Ê®°Âºè\n");
 		}
 		system("pause");
 	}
 
 	void showPlayerType() {
 		system("cls");
-		printf("∞¥\"A\"∫Õ\"D\"«–ªªΩ«…´,∞¥Enterº¸»∑»œ\n");
-		switch(playerType) {
-			case 0:
-				system("color 9F");
-				printf("                 –°—ß…˙\n");
-				printf("        @@@@@@@@@@@@@@@@@@@@@@@       \n");
-				printf("    O@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\     \n");
-				printf("   OOO@@@@@@@@@@@@@@@@@@@@@@@@@@@OO`   \n");
-				printf("  OOOOOOOOO@@OO@@@@@@@@@@@@@@O@@@OOO   \n");
-				printf(" =O@@@@O@@@O@@@@OOOOOOO@OOOOOOOOOOO@\\  \n");
-				printf(" @O@@@@@@@@@@@O@OO@@@@OO@OOOOOO@OOOOO` \n");
-				printf("=@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@^ \n");
-				printf("=@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\ \n");
-				printf("=@@@@@@@@@@@@@@@@@@O@@@@@@@@@@@@@@@@@^ \n");
-				printf("=@@@@@@@@O\\O/\\OOOO[\\OOOOOOO@@@@@@@@O@` \n");
-				printf(" @O@@@@/**,/OOO]**   *,*]]]]* ,@@@@O^  \n");
-				printf(" ,/OO@O^     ***               ,@@O/   \n");
-				printf("   OO^ `*  <°ˆ>         <°ˆ>     OOO    \n");
-				printf("   ,^ =            \\\\           =OO     \n");
-				printf("      |              \\\\          `        \n");
-				printf("      *             ==           /   \n");
-				printf("    * =                               \n");
-				printf("    ,`**          /====\\     ,`**=    \n");
-				printf("      *,**        \\====/     ****=`     \n");
-				printf("      \\*\\***               ***        \n");
-				printf("ººƒ‹£∫Œﬁ\n");
-				printf("ºÚΩÈ£∫÷ªª·œπ≈‹µƒΩ«…´");
-				break;
-			case 1:
-				system("color AC");
-				printf("                  ¬Î≈©\n");
-				printf("                . @@@@@@@@@@@@@@\\\n");
-				printf("              ,@@@@@@@@@@@@@@@@@@@ `\n");
-				printf("             ,@@@@@@@@@@@@@@@@@@@@@@`\n");
-				printf("           .]@@@@@@@@@@@@@@@@@@@@@@@@\\.\n");
-				printf("          .@@@@@@@@@@@@@   @ @@@@@@@   .\n");
-				printf("           @ @@@@@@@@@@          @@@@  .\n");
-				printf("          . @@@@@@@  =====   ====  @@@ ^.\n");
-				printf("           ,@@@@@@@   <°ˆ>   <°ˆ>    @@/\n");
-				printf("            ,@@@@@      /    \\  \\   @`\n");
-				printf("           =   @@@      / -- \\    @/\n");
-				printf("          ,   @@@@@   /\\      /   @@^\n");
-				printf("         /      @@@@@/   \\ /      @@^\n");
-				printf("        =@@@@    @@@@            @@@\\___-------`\n");
-				printf("        .@@@@@@@@ @@@@          @@      \\    \\\\ \\ \\\n");
-				printf("         =@@@@@@@@@@@@@ =======@@\\\\ \\  \\     \\\\ \\.\n");
-				printf("         /@@@@@@@@@@@@@@       @^.=\\ ^ \\^ \\   \\\\\\\\\\\\\n");
-				printf("      ,    @@@@@@@@@@@@@@@@@@@@`  .\\@ //\\/\\ \\[\\\\\\  \\\n");
-				printf("   ./   @@@@@@@@@@@@@@/[/\\ [\\@@@@@@@@@ /\\\\`\\`[\\]\\ ,\n");
-				printf(" ,      @@@^.[\\@@@@@   \\ @@@@@@@@@@@@@/  \\\\\\\\``,, \\\n");
-				printf(".       @@ `   .   ,\\=  @@@@@@`..[@@@@    // /`,,*/ \n");
-				printf("ººƒ‹£∫ ’ºØ/∑≈÷√∑ΩøÈ\n");
-				printf("ºÚΩÈ£∫¬Î¥˙¬Î“—≥…œ∞πﬂµƒΩ«…´");
-				break;
-			case 2:
-				system("color F0");
-				printf("                  “Ω…˙\n");
-				printf("                      =@@@@@@@@@@@@@@]\n");
-				printf("                     @@@@@@@@@@@@@@@@@\\\n");
-				printf("                  /@@@@@@  @@@@@@@@@@@@@\n");
-				printf("                 \\@@@@       @@@@@@@@@@@@\n");
-				printf("                 @@@@         @@@@@@@@@@@@\n");
-				printf("                =@@@---\\* */---@@@@@@@@@@@`\n");
-				printf("                =@@@<°ˆ>/   <°ˆ>@@@@@@@@@@^\n");
-				printf("                 @@@   /      @@@@@@@@@@@@^\n");
-				printf("                ,@@@@@  /   \\     @@@@@@@@@\n");
-				printf("                =@@@@               @@@@@@@`\n");
-				printf("                  @@@  \\_____/      @@@@/,\n");
-				printf("                  =/@               @@@@@\n");
-				printf("                   \\\\           //    @@@       @@@/`\n");
-				printf("                      ,[[*\\\\--///        @@@\\\\`\n");
-				printf("                      ,=             @@@@\\\\*\n");
-				printf("                        ,            @@@@@ `\n");
-				printf("                        **           @@@@@@\\\\\n");
-				printf("                       =***=         @\\\\@@@@@ \n");
-				printf("                        ,**,[       /**=@@@@@^,\n");
-				printf("                  ,/`  @  =]       ^  **\\\\\\@@^]]^\n");
-				printf("ººƒ‹£∫◊‘¡∆\n");
-				printf("ºÚΩÈ£∫œ∞πﬂ÷Œ¡∆±»ÀµƒΩ«…´");
-				break;
-			case 3:
-				system("color 94");
-				printf("                  ¡‘»À\n");
-				printf("\n");
-				printf("\n");
-				printf("\n");
-				printf("\n");
-				printf("\n");
-				printf("                                                   //\n");
-				printf("                                            /]]@/[/\n");
-				printf("          ,/@@@@`                   /]/@/[`/\n");
-				printf("         @@@@@@@@`          //@@@@@//`\n");
-				printf("        =@@@@@@@@^    ,/@@@@/\\@@@@\n");
-				printf("        @@@@@@@@@@]@@@@@\\`  =@@@`\n");
-				printf("      /@@@@@@@@@@@@@@@`   ,@@@@@`\n");
-				printf("   ,@@@@@@@@@@@@@@@@@\\/\\]/@@@@@@\n");
-				printf(" ,@@@@@@@@@@@@@@@@@@@@@@@@@@@@@^\n");
-				printf(" =@@@@@@@@@@@@@@@@@@@@@@@@@@@[\n");
-				printf(" \\@@@@@@@@@@@@@@@@@@@@@@/`\n");
-				printf("    \\@@@@@@@@@@@@@@@@@@^\n");
-				printf("     \\@@@@@@@@@@@@@@@@@\\\n");
-				printf("      @@@@@@@@@@@@@@@@@@^\n");
-				printf("      =@@@@@@@@@@@@@@@@@@^\n");
-				printf("ººƒ‹£∫∑≈÷√œ›⁄Â\n");
-				printf("ºÚΩÈ£∫œ∞πﬂ…±…˙µƒΩ«…´");
-				break;
-			case 4:
-				system("color 5D");
-				printf("                Ω÷Õ∑«‡ƒÍ\n");
-				printf("\n");
-				printf("\n");
-				printf("                                  /  /\\^\\^]       \n");
-				printf("                                /           \\     \n");
-				printf("                           ===\\/]________ =* S      \n");
-				printf("                         ====== @\\*       =SSSSSS    \n");
-				printf("                                  @       SS*SSSSS  \n");
-				printf("                                  @      @SSSSSSSS   \n");
-				printf("                                 @@@@@@@@@SSSSSSSS    \n");
-				printf("                                 @@@@@@ @@@@@@@@    \n");
-				printf("                               @@@@         @@@@    \n");
-				printf("                           @@@@@            @@@@@    \n");
-				printf("                         @@@@@@            @@@@@@     \n");
-				printf("                          @@@@@@          @@@@@@@    \n");
-				printf("                                    @@@@@@@@@@@@@  \n");
-				printf("                                @@@@@@@@@@@@@@@@@  \n");
-				printf("                              @@@@@@@@@@@@@@@@@@@  \n");
-				printf("                           @@@@@@@@@@@@@@@@@@@@@@    \n");
-				printf("                       @@@@@@@@@     @@@@@@@@@@@       \n");
-				printf("                      @@@@@@@@@          @@@@@@        \n");
-				printf("ººƒ‹£∫…¡œ÷≥Â¥Ã\n");
-				printf("ºÚΩÈ£∫œ∞πﬂ”Œ◊ﬂ‘⁄Ω÷Õ∑µƒΩ«…´");
-				break;
+		printf("Êåâ\"A\"Âíå\"D\"ÂàáÊç¢ËßíËâ≤,ÊåâEnterÈîÆÁ°ÆËÆ§\n");
+		switch (playerType) {
+		case 0:
+			system("color 9F");
+			printf("                 Â∞èÂ≠¶Áîü\n");
+			printf("        @@@@@@@@@@@@@@@@@@@@@@@       \n");
+			printf("    O@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\     \n");
+			printf("   OOO@@@@@@@@@@@@@@@@@@@@@@@@@@@OO`   \n");
+			printf("  OOOOOOOOO@@OO@@@@@@@@@@@@@@O@@@OOO   \n");
+			printf(" =O@@@@O@@@O@@@@OOOOOOO@OOOOOOOOOOO@\\  \n");
+			printf(" @O@@@@@@@@@@@O@OO@@@@OO@OOOOOO@OOOOO` \n");
+			printf("=@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@^ \n");
+			printf("=@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\ \n");
+			printf("=@@@@@@@@@@@@@@@@@@O@@@@@@@@@@@@@@@@@^ \n");
+			printf("=@@@@@@@@O\\O/\\OOOO[\\OOOOOOO@@@@@@@@O@` \n");
+			printf(" @O@@@@/**,/OOO]**   *,*]]]]* ,@@@@O^  \n");
+			printf(" ,/OO@O^     ***               ,@@O/   \n");
+			printf("   OO^ `*  <‚ñ†>         <‚ñ†>     OOO    \n");
+			printf("   ,^ =            \\\\           =OO     \n");
+			printf("      |              \\\\          `        \n");
+			printf("      *             ==           /   \n");
+			printf("    * =                               \n");
+			printf("    ,`**          /====\\     ,`**=    \n");
+			printf("      *,**        \\====/     ****=`     \n");
+			printf("      \\*\\***               ***        \n");
+			printf("ÊäÄËÉΩÔºöÊó†\n");
+			printf("ÁÆÄ‰ªãÔºöÂè™‰ºöÁûéË∑ëÁöÑËßíËâ≤");
+			break;
+		case 1:
+			system("color AC");
+			printf("                  Á†ÅÂÜú\n");
+			printf("                . @@@@@@@@@@@@@@\\\n");
+			printf("              ,@@@@@@@@@@@@@@@@@@@ `\n");
+			printf("             ,@@@@@@@@@@@@@@@@@@@@@@`\n");
+			printf("           .]@@@@@@@@@@@@@@@@@@@@@@@@\\.\n");
+			printf("          .@@@@@@@@@@@@@   @ @@@@@@@   .\n");
+			printf("           @ @@@@@@@@@@          @@@@  .\n");
+			printf("          . @@@@@@@  =====   ====  @@@ ^.\n");
+			printf("           ,@@@@@@@   <‚ñ†>   <‚ñ†>    @@/\n");
+			printf("            ,@@@@@      /    \\  \\   @`\n");
+			printf("           =   @@@      / -- \\    @/\n");
+			printf("          ,   @@@@@   /\\      /   @@^\n");
+			printf("         /      @@@@@/   \\ /      @@^\n");
+			printf("        =@@@@    @@@@            @@@\\___-------`\n");
+			printf("        .@@@@@@@@ @@@@          @@      \\    \\\\ \\ \\\n");
+			printf("         =@@@@@@@@@@@@@ =======@@\\\\ \\  \\     \\\\ \\.\n");
+			printf("         /@@@@@@@@@@@@@@       @^.=\\ ^ \\^ \\   \\\\\\\\\\\\\n");
+			printf("      ,    @@@@@@@@@@@@@@@@@@@@`  .\\@ //\\/\\ \\[\\\\\\  \\\n");
+			printf("   ./   @@@@@@@@@@@@@@/[/\\ [\\@@@@@@@@@ /\\\\`\\`[\\]\\ ,\n");
+			printf(" ,      @@@^.[\\@@@@@   \\ @@@@@@@@@@@@@/  \\\\\\\\``,, \\\n");
+			printf(".       @@ `   .   ,\\=  @@@@@@`..[@@@@    // /`,,*/ \n");
+			printf("ÊäÄËÉΩÔºöÊî∂ÈõÜ/ÊîæÁΩÆÊñπÂùó\n");
+			printf("ÁÆÄ‰ªãÔºöÁ†Å‰ª£Á†ÅÂ∑≤Êàê‰π†ÊÉØÁöÑËßíËâ≤");
+			break;
+		case 2:
+			system("color F0");
+			printf("                  ÂåªÁîü\n");
+			printf("                      =@@@@@@@@@@@@@@]\n");
+			printf("                     @@@@@@@@@@@@@@@@@\\\n");
+			printf("                  /@@@@@@  @@@@@@@@@@@@@\n");
+			printf("                 \\@@@@       @@@@@@@@@@@@\n");
+			printf("                 @@@@         @@@@@@@@@@@@\n");
+			printf("                =@@@---\\* */---@@@@@@@@@@@`\n");
+			printf("                =@@@<‚ñ†>/   <‚ñ†>@@@@@@@@@@^\n");
+			printf("                 @@@   /      @@@@@@@@@@@@^\n");
+			printf("                ,@@@@@  /   \\     @@@@@@@@@\n");
+			printf("                =@@@@               @@@@@@@`\n");
+			printf("                  @@@  \\_____/      @@@@/,\n");
+			printf("                  =/@               @@@@@\n");
+			printf("                   \\\\           //    @@@       @@@/`\n");
+			printf("                      ,[[*\\\\--///        @@@\\\\`\n");
+			printf("                      ,=             @@@@\\\\*\n");
+			printf("                        ,            @@@@@ `\n");
+			printf("                        **           @@@@@@\\\\\n");
+			printf("                       =***=         @\\\\@@@@@ \n");
+			printf("                        ,**,[       /**=@@@@@^,\n");
+			printf("                  ,/`  @  =]       ^  **\\\\\\@@^]]^\n");
+			printf("ÊäÄËÉΩÔºöËá™Áñó\n");
+			printf("ÁÆÄ‰ªãÔºö‰π†ÊÉØÊ≤ªÁñóÂà´‰∫∫ÁöÑËßíËâ≤");
+			break;
+		case 3:
+			system("color 94");
+			printf("                  Áåé‰∫∫\n");
+			printf("\n");
+			printf("\n");
+			printf("\n");
+			printf("\n");
+			printf("\n");
+			printf("                                                   //\n");
+			printf("                                            /]]@/[/\n");
+			printf("          ,/@@@@`                   /]/@/[`/\n");
+			printf("         @@@@@@@@`          //@@@@@//`\n");
+			printf("        =@@@@@@@@^    ,/@@@@/\\@@@@\n");
+			printf("        @@@@@@@@@@]@@@@@\\`  =@@@`\n");
+			printf("      /@@@@@@@@@@@@@@@`   ,@@@@@`\n");
+			printf("   ,@@@@@@@@@@@@@@@@@\\/\\]/@@@@@@\n");
+			printf(" ,@@@@@@@@@@@@@@@@@@@@@@@@@@@@@^\n");
+			printf(" =@@@@@@@@@@@@@@@@@@@@@@@@@@@[\n");
+			printf(" \\@@@@@@@@@@@@@@@@@@@@@@/`\n");
+			printf("    \\@@@@@@@@@@@@@@@@@@^\n");
+			printf("     \\@@@@@@@@@@@@@@@@@\\\n");
+			printf("      @@@@@@@@@@@@@@@@@@^\n");
+			printf("      =@@@@@@@@@@@@@@@@@@^\n");
+			printf("ÊäÄËÉΩÔºöÊîæÁΩÆÈô∑Èò±\n");
+			printf("ÁÆÄ‰ªãÔºö‰π†ÊÉØÊùÄÁîüÁöÑËßíËâ≤");
+			break;
+		case 4:
+			system("color 5D");
+			printf("                Ë°óÂ§¥ÈùíÂπ¥\n");
+			printf("\n");
+			printf("\n");
+			printf("                                  /  /\\^\\^]       \n");
+			printf("                                /           \\     \n");
+			printf("                           ===\\/]________ =* S      \n");
+			printf("                         ====== @\\*       =SSSSSS    \n");
+			printf("                                  @       SS*SSSSS  \n");
+			printf("                                  @      @SSSSSSSS   \n");
+			printf("                                 @@@@@@@@@SSSSSSSS    \n");
+			printf("                                 @@@@@@ @@@@@@@@    \n");
+			printf("                               @@@@         @@@@    \n");
+			printf("                           @@@@@            @@@@@    \n");
+			printf("                         @@@@@@            @@@@@@     \n");
+			printf("                          @@@@@@          @@@@@@@    \n");
+			printf("                                    @@@@@@@@@@@@@  \n");
+			printf("                                @@@@@@@@@@@@@@@@@  \n");
+			printf("                              @@@@@@@@@@@@@@@@@@@  \n");
+			printf("                           @@@@@@@@@@@@@@@@@@@@@@    \n");
+			printf("                       @@@@@@@@@     @@@@@@@@@@@       \n");
+			printf("                      @@@@@@@@@          @@@@@@        \n");
+			printf("ÊäÄËÉΩÔºöÈó™Áé∞ÂÜ≤Âà∫\n");
+			printf("ÁÆÄ‰ªãÔºö‰π†ÊÉØÊ∏∏Ëµ∞Âú®Ë°óÂ§¥ÁöÑËßíËâ≤");
+			break;
 		}
-		if(playerType>=(level/10)+1)printf("\n    µ»º∂≤ª◊„£°%dº∂Ω‚À¯:ƒ˙œ÷‘⁄Œ™%dº∂°£",
-			                                   playerType*10,level);
+		if (playerType >= (level / 10) + 1)printf("\n    Á≠âÁ∫ß‰∏çË∂≥ÔºÅ%dÁ∫ßËß£ÈîÅ:ÊÇ®Áé∞Âú®‰∏∫%dÁ∫ß„ÄÇ",
+			playerType * 10, level);
 	}
 
 	bool choosePlayerTypes() {
-		while(true) {
+		while (true) {
 			showPlayerType();
-			while(!(KEY_DOWN(VK_ESCAPE)||KEY_DOWN('A')||KEY_DOWN('D')||KEY_DOWN(VK_RETURN)
-			        ||KEY_DOWN('F')||KEY_DOWN(VK_RIGHT)||KEY_DOWN(VK_LEFT)))_sleep(10);
-			if(KEY_DOWN(VK_ESCAPE))return false;
-			if(KEY_DOWN(VK_RETURN)||KEY_DOWN('F'))if(playerType<(level/10)+1)return true;
-			if((KEY_DOWN('A')||KEY_DOWN(VK_LEFT))&&playerType>0) {
+			while (!(KEY_DOWN(VK_ESCAPE) || KEY_DOWN('A') || KEY_DOWN('D') || KEY_DOWN(VK_RETURN)
+				|| KEY_DOWN('F') || KEY_DOWN(VK_RIGHT) || KEY_DOWN(VK_LEFT)))Sleep(10);
+			if (KEY_DOWN(VK_ESCAPE))return false;
+			if (KEY_DOWN(VK_RETURN) || KEY_DOWN('F'))if (playerType < (level / 10) + 1)return true;
+			if ((KEY_DOWN('A') || KEY_DOWN(VK_LEFT)) && playerType > 0) {
 				playerType--;
 			}
-			if((KEY_DOWN('D')||KEY_DOWN(VK_RIGHT))&&playerType<NUM_MAXPLAYERTYPE) {
+			if ((KEY_DOWN('D') || KEY_DOWN(VK_RIGHT)) && playerType < NUM_MAXPLAYERTYPE) {
 				playerType++;
 			}
-			_sleep(150);
+			Sleep(150);
 		}
 	}
 
 	void showAbilities() {
 		system("cls");
-		printf("∞¥\"A\"∫Õ\"D\"«–ªªººƒ‹,∞¥Enterº¸»∑»œ\n");
-		switch(ability) {
-			case -1:
-				system("color F0");
-				printf("           ≤ª—°‘Ò\n");
-				break;
-			case 0:
-				system("color 08");
-				printf("           —€√§\n");
-				printf("’˝√Ê–ßπ˚£∫œ‘ æ…± ÷Œª÷√,œ›⁄ÂŒª÷√\n");
-				printf("∏∫√Ê–ßπ˚£∫Ωˆø…º˚÷‹Œß∑ΩøÈ");
-				break;
-			case 1:
-				system("color 19");
-				printf("          “ª∆“°∞⁄\n");
-				printf("’˝√Ê–ßπ˚£∫—™¡ø‘ΩµÕ…± ÷“∆∂ØÀŸ∂»‘Ω¬˝\n");
-				printf("∏∫√Ê–ßπ˚£∫√ø◊ﬂ“ª≤ΩΩµµÕ1—™¡ø£¨√ø¥Œ±ªπ•ª˜∫ÛµÙ—™ÀŸ∂»∑≠∑¨");
-				break;
-			case 2:
-				system("color 4C");
-				printf("            —™’Æ—™ªπ\n");
-				printf("’˝√Ê–ßπ˚£∫ø™æ÷‘ˆº”200—™¡ø\n");
-				printf("∏∫√Ê–ßπ˚£∫…± ÷√ø≥…π¶π•ª˜“ª¥Œ£¨π•ª˜¡¶æÕ…œ…˝25");
-				break;
-			case 3:
-				system("color 5D");
-				printf("             ƒ¨∞ß\n");
-				printf("’˝√Ê–ßπ˚£∫…±À¿“ªŒª…± ÷∆‰À˚…± ÷ƒ¨∞ß5√Î(π•ª˜∑¥µØ)\n");
-				printf("∏∫√Ê–ßπ˚£∫ƒ¨∞ß∫Û√øŒª…± ÷π•ª˜¡¶‘ˆº”50%c(ø…µ˛º”£¨Œﬁ…œœﬁ)",'%');
+		printf("Êåâ\"A\"Âíå\"D\"ÂàáÊç¢ÊäÄËÉΩ,ÊåâEnterÈîÆÁ°ÆËÆ§\n");
+		switch (ability) {
+		case -1:
+			system("color F0");
+			printf("           ‰∏çÈÄâÊã©\n");
+			break;
+		case 0:
+			system("color 08");
+			printf("           ÁúºÁõ≤\n");
+			printf("Ê≠£Èù¢ÊïàÊûúÔºöÊòæÁ§∫ÊùÄÊâã‰ΩçÁΩÆ,Èô∑Èò±‰ΩçÁΩÆ\n");
+			printf("Ë¥üÈù¢ÊïàÊûúÔºö‰ªÖÂèØËßÅÂë®Âõ¥ÊñπÂùó");
+			break;
+		case 1:
+			system("color 19");
+			printf("          ‰∏ÄËµ∑ÊëáÊëÜ\n");
+			printf("Ê≠£Èù¢ÊïàÊûúÔºöË°ÄÈáèË∂ä‰ΩéÊùÄÊâãÁßªÂä®ÈÄüÂ∫¶Ë∂äÊÖ¢\n");
+			printf("Ë¥üÈù¢ÊïàÊûúÔºöÊØèËµ∞‰∏ÄÊ≠•Èôç‰Ωé1Ë°ÄÈáèÔºåÊØèÊ¨°Ë¢´ÊîªÂáªÂêéÊéâË°ÄÈÄüÂ∫¶ÁøªÁï™");
+			break;
+		case 2:
+			system("color 4C");
+			printf("            Ë°ÄÂÄ∫Ë°ÄËøò\n");
+			printf("Ê≠£Èù¢ÊïàÊûúÔºöÂºÄÂ±ÄÂ¢ûÂä†200Ë°ÄÈáè\n");
+			printf("Ë¥üÈù¢ÊïàÊûúÔºöÊùÄÊâãÊØèÊàêÂäüÊîªÂáª‰∏ÄÊ¨°ÔºåÊîªÂáªÂäõÂ∞±‰∏äÂçá25");
+			break;
+		case 3:
+			system("color 5D");
+			printf("             ÈªòÂìÄ\n");
+			printf("Ê≠£Èù¢ÊïàÊûúÔºöÊùÄÊ≠ª‰∏Ä‰ΩçÊùÄÊâãÂÖ∂‰ªñÊùÄÊâãÈªòÂìÄ5Áßí(ÊîªÂáªÂèçÂºπ)\n");
+			printf("Ë¥üÈù¢ÊïàÊûúÔºöÈªòÂìÄÂêéÊØè‰ΩçÊùÄÊâãÊîªÂáªÂäõÂ¢ûÂä†50%c(ÂèØÂè†Âä†ÔºåÊó†‰∏äÈôê)", '%');
 		}
 	}
 
 	bool chooseAbilities() {
-		ability=-1;
-		while(true) {
+		ability = -1;
+		while (true) {
 			showAbilities();
-			while(!(KEY_DOWN(VK_ESCAPE)||KEY_DOWN('A')||KEY_DOWN('D')||KEY_DOWN(VK_RETURN)
-			        ||KEY_DOWN('F')||KEY_DOWN(VK_RIGHT)||KEY_DOWN(VK_LEFT)))_sleep(10);
-			if(KEY_DOWN(VK_ESCAPE))return false;
-			if(KEY_DOWN(VK_RETURN)||KEY_DOWN('F'))return true;
-			if((KEY_DOWN('A')||KEY_DOWN(VK_LEFT))&&ability>-1)ability--;
-			if((KEY_DOWN('D')||KEY_DOWN(VK_RIGHT))&&ability<NUM_MAXABILITYNUM)ability++;
-			_sleep(150);
+			while (!(KEY_DOWN(VK_ESCAPE) || KEY_DOWN('A') || KEY_DOWN('D') || KEY_DOWN(VK_RETURN)
+				|| KEY_DOWN('F') || KEY_DOWN(VK_RIGHT) || KEY_DOWN(VK_LEFT)))Sleep(10);
+			if (KEY_DOWN(VK_ESCAPE))return false;
+			if (KEY_DOWN(VK_RETURN) || KEY_DOWN('F'))return true;
+			if ((KEY_DOWN('A') || KEY_DOWN(VK_LEFT)) && ability > -1)ability--;
+			if ((KEY_DOWN('D') || KEY_DOWN(VK_RIGHT)) && ability < NUM_MAXABILITYNUM)ability++;
+			Sleep(150);
 		}
 	}
 
 
 	void setTrap() {
-		int j,p;
-		for(int i=0; i<=NUM_KILLERS+3; i++) {
+		int j, p;
+		for (int i = 0; i <= MAX_TRAP(difficulty); i++) {
 			do {
-				trapPosZ[i]=1+abs(rand()*time(NULL))%Floor;
-				p=0;
+				trapPosZ[i] = 1 + abs(rand() * time(NULL)) % Floor;
+				p = 0;
 				do {
-					trapPosX[i]=1+abs(rand()*time(NULL))%20;
-					j=0;
+					trapPosX[i] = 1 + abs(rand() * time(NULL)) % 20;
+					j = 0;
 					do {
-						trapPosY[i]=1+abs(rand()*time(NULL))%20;
+						trapPosY[i] = 1 + abs(rand() * time(NULL)) % 20;
 						j++;
-					} while(j<4&&(mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==1
-					              ||mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==-1
-					              ||isAnotherKillerHere(trapPosX[i],trapPosY[i],trapPosZ[i],-1)
-					              ||isPlayerAround(playerPosX,playerPosY,playerPosZ,trapPosX[i],trapPosY[i],
-					                               trapPosZ[i])||isAnotherTrapHere(trapPosX[i],trapPosY[i],trapPosZ[i],i)));
-				} while(p<4&&(mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==1
-				              ||mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==-1
-				              ||isAnotherKillerHere(trapPosX[i],trapPosY[i],trapPosZ[i],-1)
-				              ||isPlayerAround(playerPosX,playerPosY,playerPosZ,trapPosX[i],trapPosY[i],
-				                               trapPosZ[i])||isAnotherTrapHere(trapPosX[i],trapPosY[i],trapPosZ[i],i)));
-			} while(mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==1
-			        ||mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==-1
-			        ||isAnotherKillerHere(trapPosX[i],trapPosY[i],trapPosZ[i],-1)
-			        ||isPlayerAround(playerPosX,playerPosY,playerPosZ,trapPosX[i],trapPosY[i],
-			                         trapPosZ[i])||isAnotherTrapHere(trapPosX[i],trapPosY[i],trapPosZ[i],i));
+					} while (j < 4 && (mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == 1
+						|| mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == -1
+						|| isAnotherKillerHere(trapPosX[i], trapPosY[i], trapPosZ[i], -1)
+						|| isPlayerAround(playerPosX, playerPosY, playerPosZ, trapPosX[i], trapPosY[i],
+							trapPosZ[i]) || isAnotherTrapHere(trapPosX[i], trapPosY[i], trapPosZ[i], i)));
+				} while (p < 4 && (mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == 1
+					|| mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == -1
+					|| isAnotherKillerHere(trapPosX[i], trapPosY[i], trapPosZ[i], -1)
+					|| isPlayerAround(playerPosX, playerPosY, playerPosZ, trapPosX[i], trapPosY[i],
+						trapPosZ[i]) || isAnotherTrapHere(trapPosX[i], trapPosY[i], trapPosZ[i], i)));
+			} while (mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == 1
+				|| mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == -1
+				|| isAnotherKillerHere(trapPosX[i], trapPosY[i], trapPosZ[i], -1)
+				|| isPlayerAround(playerPosX, playerPosY, playerPosZ, trapPosX[i], trapPosY[i],
+					trapPosZ[i]) || isAnotherTrapHere(trapPosX[i], trapPosY[i], trapPosZ[i], i));
 		}
 	}
 
 
 	void showDifficulties() {
 		system("cls");
-		printf("∞¥\"A\"∫Õ\"D\"«–ªªƒ—∂»,∞¥Enterº¸»∑»œ\n");
-		switch(difficulty) {
-			case -2:
-				system("color 5D");
-				printf("µ˜ ‘ƒ£ Ω\n");
-				printf(" ”“∞£∫»´∆¡\n");
-				printf("…± ÷ ˝£∫2");
-				break;
-			case -1:
-				system("color 5D");
-				printf("ΩÃ≥Ãƒ£ Ω\n");
-				break;
-			case 0:
-				system("color 2A");
-				printf("ºÚµ•ƒ£ Ω\n");
-				printf(" ”“∞£∫»´∆¡\n");
-				printf("…± ÷ ˝£∫2");
-				break;
-			case 1:
-				system("color 6E");
-				printf("÷–µ»ƒ£ Ω\n");
-				printf(" ”“∞£∫‘≤»¶£®∞Îæ∂10∏Ò£©\n");
-				printf("…± ÷ ˝£∫5");
-				break;
-			case 2:
-				system("color C4");
-				printf("¿ßƒ—ƒ£ Ω\n");
-				printf(" ”“∞£∫‘≤»¶£®∞Îæ∂5∏Ò£©\n");
-				printf("…± ÷ ˝£∫10");
-				break;
-			case 3:
-				system("color 08");
-				printf("µÿ”¸ƒ£ Ω\n");
-				printf(" ”“∞£∫1/4…»–Œ£®∞Îæ∂5∏Ò£©\n");
-				printf("…± ÷ ˝£∫15");
+		printf("Êåâ\"A\"Âíå\"D\"ÂàáÊç¢ÈöæÂ∫¶,ÊåâEnterÈîÆÁ°ÆËÆ§\n");
+		switch (difficulty) {
+		case -2:
+			system("color 5D");
+			printf("Ë∞ÉËØïÊ®°Âºè\n");
+			printf("ËßÜÈáéÔºöÂÖ®Â±è\n");
+			printf("ÊùÄÊâãÊï∞Ôºö2");
+			break;
+		case -1:
+			system("color 5D");
+			printf("ÊïôÁ®ãÊ®°Âºè\n");
+			break;
+		case 0:
+			system("color 2A");
+			printf("ÁÆÄÂçïÊ®°Âºè\n");
+			printf("ËßÜÈáéÔºöÂÖ®Â±è\n");
+			printf("ÊùÄÊâãÊï∞Ôºö2");
+			break;
+		case 1:
+			system("color 6E");
+			printf("‰∏≠Á≠âÊ®°Âºè\n");
+			printf("ËßÜÈáéÔºöÂúÜÂúàÔºàÂçäÂæÑ10Ê†ºÔºâ\n");
+			printf("ÊùÄÊâãÊï∞Ôºö5");
+			break;
+		case 2:
+			system("color C4");
+			printf("Âõ∞ÈöæÊ®°Âºè\n");
+			printf("ËßÜÈáéÔºöÂúÜÂúàÔºàÂçäÂæÑ5Ê†ºÔºâ\n");
+			printf("ÊùÄÊâãÊï∞Ôºö10");
+			break;
+		case 3:
+			system("color 08");
+			printf("Âú∞Áã±Ê®°Âºè\n");
+			printf("ËßÜÈáéÔºö1/4ÊâáÂΩ¢ÔºàÂçäÂæÑ5Ê†ºÔºâ\n");
+			printf("ÊùÄÊâãÊï∞Ôºö15");
 		}
-		if(difficulty>=(level/10)+1)printf("\n    µ»º∂≤ª◊„£°%dº∂Ω‚À¯:ƒ˙œ÷‘⁄Œ™%dº∂°£",
-			                                   difficulty*10,level);
+		if (difficulty >= (level / 10) + 1)printf("\n    Á≠âÁ∫ß‰∏çË∂≥ÔºÅ%dÁ∫ßËß£ÈîÅ:ÊÇ®Áé∞Âú®‰∏∫%dÁ∫ß„ÄÇ",
+			difficulty * 10, level);
 	}
 
 	bool chooseDifficulties() {
-		difficulty=-1;
-		while(true) {
+		difficulty = -1;
+		while (true) {
 			showDifficulties();
-			while(!(KEY_DOWN(VK_ESCAPE)||KEY_DOWN('A')||KEY_DOWN('D')||KEY_DOWN(VK_RETURN)||KEY_DOWN(VK_LEFT)
-			        ||KEY_DOWN(VK_RIGHT)||KEY_DOWN('F')))_sleep(10);
-			if(KEY_DOWN(VK_ESCAPE))return false;
-			if(KEY_DOWN(VK_RETURN)||KEY_DOWN('F'))
-				if((difficulty<(level/10)+1)||(difficulty>-2&&debugEnable)) {
+			while (!(KEY_DOWN(VK_ESCAPE) || KEY_DOWN('A') || KEY_DOWN('D') || KEY_DOWN(VK_RETURN) || KEY_DOWN(VK_LEFT)
+				|| KEY_DOWN(VK_RIGHT) || KEY_DOWN('F')))Sleep(10);
+			if (KEY_DOWN(VK_ESCAPE))return false;
+			if (KEY_DOWN(VK_RETURN) || KEY_DOWN('F'))
+				if ((difficulty < (level / 10) + 1) || (difficulty > -2 && debugEnable)) {
 					system("color F0");
 					return true;
 				}
-			if(KEY_DOWN(VK_LEFT)||KEY_DOWN('A'))if(difficulty>-1||(difficulty>-2
-				                                       &&debugEnable))difficulty--;
-			if(KEY_DOWN(VK_RIGHT)
-			        ||KEY_DOWN('D'))if(difficulty<NUM_MAXDIFFICULTY)difficulty++;
-			_sleep(150);
+			if (KEY_DOWN(VK_LEFT) || KEY_DOWN('A'))if (difficulty > -1 || (difficulty > -2
+				&& debugEnable))difficulty--;
+			if (KEY_DOWN(VK_RIGHT)
+				|| KEY_DOWN('D'))if (difficulty < NUM_MAXDIFFICULTY)difficulty++;
+			Sleep(150);
 		}
 	}
 
-	bool readMap() {
-		Floor=0;
+	bool readMap(FILE* maper) {
+		if (maper == 0)return false;
+		Floor = 0;
 		int tmp;
-		memset(mapG,-1,sizeof(mapG));
-		while(fscanf(maper,"F%d",&tmp)!=EOF) {
-			Floor=tmp;
-			for(int i=1; i<21; i++) {
-				for(int j=1; j<21; j++) {
-					fscanf(maper,"%d",&mapG[i][j][Floor]);
-					if(mapG[i][j][Floor]>=10)
+		memset(mapG, -1, sizeof(mapG));
+		while (fscanf(maper, "F%d", &tmp) != EOF) {
+			Floor = tmp;
+			for (int i = 1; i < 21; i++) {
+				for (int j = 1; j < 21; j++) {
+					fscanf(maper, "%d", &mapG[i][j][Floor]);
+					if (mapG[i][j][Floor] >= 10)
 						return false;
 				}
 			}
 		}
-		if(Floor>=1&&Floor<=8)return true;
+		if (Floor >= 1 && Floor <= 8)return true;
 		return false;
 	}
 
-	bool inMap(int X,int Y) {
-		if(0<X&&X<22&&0<Y&&Y<22)return true;
+	bool inMap(int X, int Y) {
+		if (0 < X && X < 22 && 0 < Y && Y < 22)return true;
 		return false;
 	}
 
-	void setStep(int posX,int posY,int layer,int stepNum) {
-		if((!inMap(posX,posY))||layer<1||layer>Floor)return;
-		if(resetedStep[posX][posY][layer]&&stepNum>=steps[posX][posY][layer])return;
-		steps[posX][posY][layer]=stepNum;
-		resetedStep[posX][posY][layer]=true;
-		if(mapG[posX][posY][layer]==1||mapG[posX][posY][layer]==-1)stepNum+=500;
-		if(isAnotherTrapHere(posX,posY,layer,-1)) {
-			if(killersAlive<difficulty+2)
-				stepNum+=300+difficulty*50;
-			else if(steps[posX][posY][layer]>20-difficulty*5)
-				stepNum+=50+difficulty*20;
+	void setStep(int posX, int posY, int layer, int stepNum) {
+		if ((!inMap(posX, posY)) || layer<1 || layer>Floor)return;
+		if (resetedStep[posX][posY][layer] && stepNum >= stepsUpdate[posX][posY][layer])return;
+		stepsUpdate[posX][posY][layer] = stepNum;
+		resetedStep[posX][posY][layer] = true;
+		if (mapG[posX][posY][layer] == 1 || mapG[posX][posY][layer] == -1)
+			stepNum += WALL_WEIGHT(difficulty);
+		if (isAnotherTrapHere(posX, posY, layer, -1)) {
+			if (killersAlive < POST_REMAIN(Difficulty))
+				stepNum += TRAP_WEIGHT_POST(Difficulty);
+			else if (steps[posX][posY][layer] > TRAP_FAR_DIST(Difficulty))
+				stepNum += TRAP_WEIGHT_PRE_FAR(Difficulty);
 			else
-				stepNum+=90+difficulty*30;
+				stepNum += TRAP_WEIGHT_PRE_CLOSE(Difficulty);
 		}
-		if(isKillerHere(posX,posY,layer))stepNum+=100+difficulty*15;
-		setStep(posX+1,posY,layer,stepNum+1);
-		setStep(posX-1,posY,layer,stepNum+1);
-		setStep(posX,posY+1,layer,stepNum+1);
-		setStep(posX,posY-1,layer,stepNum+1);
-		for(int l=1; l<=Floor; l++)
-			if(mapG[posX][posY][l]==10-layer) {
-				setStep(posX+1,posY,layer,steps[posX][posY][l]+6);
-				setStep(posX-1,posY,layer,steps[posX][posY][l]+6);
-				setStep(posX,posY+1,layer,steps[posX][posY][l]+6);
-				setStep(posX,posY-1,layer,steps[posX][posY][l]+6);
+		if (isKillerHere(posX, posY, layer))
+			stepNum += KILLER_WEIGHT(Difficulty);
+		setStep(posX + 1, posY, layer, stepNum + 1);
+		setStep(posX - 1, posY, layer, stepNum + 1);
+		setStep(posX, posY + 1, layer, stepNum + 1);
+		setStep(posX, posY - 1, layer, stepNum + 1);
+		for (int l = 1; l <= Floor; l++)
+			if (mapG[posX][posY][l] == 10 - layer){
+				setStep(posX, posY, l, stepNum + FLOOR_WEIGHT(Difficulty));
+				setStep(posX + 1, posY, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
+				setStep(posX - 1, posY, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
+				setStep(posX, posY + 1, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
+				setStep(posX, posY - 1, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
 			}
 	}
 
-	void* resetStepThread(void * vpr) {
-		memset(resetedStep,false,sizeof(resetedStep));
-		while(gameOver>0&&killersAlive>0) {
-			memset(resetedStep,false,sizeof(resetedStep));
-			setStep(playerPosX,playerPosY,playerPosZ,0);
-			_sleep(200);
+	void resetStepThread() {
+		while (gameOver > 0 && killersAlive > 0) {
+			memset(resetedStep, false, sizeof(resetedStep));
+			setStep(playerPosX, playerPosY, playerPosZ, 0);
+			memcpy(steps, stepsUpdate, sizeof(stepsUpdate));
+			Sleep(200);
 		}
-		return voidptr;
+		return;
 	}
 
 	void lookAtMap() {
-		if(historyX!=playerPosX||historyY!=playerPosY||historyZ!=playerPosZ) {
-			historyX=playerPosX;
-			historyY=playerPosY;
-			historyZ=playerPosZ;
-			for(int x=-21; x<21; x++) {
-				for(int y=-21; y<21; y++) {
-					if(difficulty<=2) {
-						if(x*x+y*y<=NUM_VIEWMAXRADIUS*NUM_VIEWMAXRADIUS)
-							watchable[x+22][y+22]=true;
-						else watchable[x+22][y+22]=false;
-					} else if(x*x+y*y<=NUM_VIEWMINRADIUS*NUM_VIEWMINRADIUS) {
-						watchable[x+22][y+22]=true;
-					} else if(mapG[x+playerPosX][y+playerPosY][playerPosZ]
-					          &&x*x+y*y<=NUM_VIEWMAXRADIUS*NUM_VIEWMAXRADIUS) {
-						if(steps[x+playerPosX][y+playerPosY][playerPosZ]==abs(x)+abs(y))
-							switch(direction) {
-								case 0://-10<i<0,-10<j<10,PosY=(j/i)*x+playerPosY(i<x<0)
-									if(y-playerPosY>=x-playerPosX&&y-playerPosY<=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
-								case 1://-10<i<10,-10<j<0,PosX=(i/j)*y+playerPosX(j<y<0)
-									if(y-playerPosY<=x-playerPosX&&y-playerPosY<=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
-								case 2://0<i<10,-10<j<10,PosY=(j/i)*x+playerPosY(0<x<i)
-									if(y-playerPosY<=x-playerPosX&&y-playerPosY>=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
-								case 3:
-									if(y-playerPosY>=x-playerPosX&&y-playerPosY>=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
+		if (historyX != playerPosX || historyY != playerPosY || historyZ != playerPosZ) {
+			historyX = playerPosX;
+			historyY = playerPosY;
+			historyZ = playerPosZ;
+			for (int x = -21; x < 21; x++) {
+				for (int y = -21; y < 21; y++) {
+					if (difficulty <= 2) {
+						if (x * x + y * y <= NUM_VIEWMAXRADIUS * NUM_VIEWMAXRADIUS)
+							watchable[x + 22][y + 22] = true;
+						else watchable[x + 22][y + 22] = false;
+					}
+					else if (x * x + y * y <= NUM_VIEWMINRADIUS * NUM_VIEWMINRADIUS) {
+						watchable[x + 22][y + 22] = true;
+					}
+					else if (mapG[x + playerPosX][y + playerPosY][playerPosZ]
+						&& x * x + y * y <= NUM_VIEWMAXRADIUS * NUM_VIEWMAXRADIUS) {
+						if (steps[x + playerPosX][y + playerPosY][playerPosZ] == abs(x) + abs(y))
+							switch (direction) {
+							case 0://-10<i<0,-10<j<10,PosY=(j/i)*x+playerPosY(i<x<0)
+								if (y - playerPosY >= x - playerPosX && y - playerPosY <= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
+							case 1://-10<i<10,-10<j<0,PosX=(i/j)*y+playerPosX(j<y<0)
+								if (y - playerPosY <= x - playerPosX && y - playerPosY <= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
+							case 2://0<i<10,-10<j<10,PosY=(j/i)*x+playerPosY(0<x<i)
+								if (y - playerPosY <= x - playerPosX && y - playerPosY >= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
+							case 3:
+								if (y - playerPosY >= x - playerPosX && y - playerPosY >= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
 							}
-						else watchable[x+22][y+22]=false;
-					} else watchable[x+22][y+22]=false;
+						else watchable[x + 22][y + 22] = false;
+					}
+					else watchable[x + 22][y + 22] = false;
 				}
 			}
 		}
 	}
 
-	bool run() {
-		memset(watchable,false,sizeof(watchable));
-		memset(steps,0x7f7f7f,sizeof(steps));
-		lookAtMap();
-		paused=false;
-		switch(playerType) {
-			case 1:
-				special=difficulty*2+4;
-			case 3:
-				special=NUM_KILLERS+difficulty;
-				break;
-
-		}
-		bloodkill=0;
-		switch(ability) {
+	bool autoRoad(int x, int y) {
+		if (steps[x][y][playerPosZ] <= 1)return true;
+		playerAutoRoad[x][y] = true;
+		int stepsNeighbor[4] = { steps[x - 1][y][playerPosZ],steps[x][y - 1][playerPosZ],steps[x + 1][y][playerPosZ],steps[x][y + 1][playerPosZ] };
+		int mapNeighbor[4] = { mapG[x - 1][y][playerPosZ],mapG[x][y - 1][playerPosZ],mapG[x + 1][y][playerPosZ],mapG[x][y + 1][playerPosZ] };
+		int backWay = -1;
+		for (int i = 0; i < 4; i++)
+			if (mapNeighbor[i] != 1 && mapNeighbor[i] != -1 && (backWay == -1 || stepsNeighbor[i] < stepsNeighbor[backWay]))
+				backWay = i;
+		switch (backWay) {
+			case -1:
+				return false;
 			case 0:
-				NUM_VIEWMAXRADIUS=NUM_VIEWMINRADIUS=2;
-				break;
+				return autoRoad(x - 1, y);
+			case 1:
+				return autoRoad(x, y - 1);
 			case 2:
-				bloodkill=1;
-				gameOver+=200;
-				break;
+				return autoRoad(x + 1, y);
+			case 3:
+				return autoRoad(x, y + 1);
+			default:
+				return false;
 		}
-		start=true;
-		pthread_t setStep;
-		pthread_create(&setStep,NULL,resetStepThread,voidptr);
-		while(gameOver>0&&killersAlive>0) {
-			if(difficulty>2)
-				lookAtMap();
-			gameOver-=bloodkill;
-			if(playerPosX<=0)playerPosX=1;
-			if(playerPosY<=0)playerPosY=1;
-			if(playerType==4&&special>0) {
-				_sleep(150);
-				special--;
-				if(special==0)special=-60-difficulty*10;
-			} else _sleep(500);
+			
+	}
 
-			while(!(KEY_DOWN(VK_LSHIFT)||KEY_DOWN('W')||KEY_DOWN('A')
-			        ||KEY_DOWN('S')||KEY_DOWN('D')||KEY_DOWN(VK_SPACE)||KEY_DOWN(VK_LEFT)
-			        ||KEY_DOWN(VK_RIGHT)||KEY_DOWN(VK_UP)||KEY_DOWN(VK_DOWN)||KEY_DOWN(VK_NUMPAD5)||KEY_DOWN(VK_NUMPAD4)||KEY_DOWN(VK_NUMPAD6)||KEY_DOWN(VK_NUMPAD8)||KEY_DOWN(VK_NUMPAD2))) {
-				if(gameOver<=0
-				        ||killersAlive==0)return gameOver>0&&killersAlive==0;
-				else if(KEY_DOWN(VK_ESCAPE)) {
-					paused=true;
-					if(MessageBox(NULL,"ƒ„“™ÕÀ≥ˆ±ææ÷”Œœ∑¬£ø","Ã· æ",
-					              MB_ICONINFORMATION|MB_YESNO)==IDYES) {
-						gameOver=0;
-						paused=false;
+	bool run() {
+		memset(watchable, false, sizeof(watchable));
+		memset(steps, 0x7f7f7f, sizeof(steps));
+		lookAtMap();
+		paused = false;
+		switch (playerType) {
+		case 1:
+			special = difficulty * 2 + 4;
+		case 3:
+			special = NUM_KILLERS + difficulty;
+			break;
+
+		}
+		bloodkill = 0;
+		switch (ability) {
+		case 0:
+			NUM_VIEWMAXRADIUS = NUM_VIEWMINRADIUS = 2;
+			break;
+		case 2:
+			bloodkill = 1;
+			gameOver += 200;
+			break;
+		}
+		start = true;
+		thread setStep(resetStepThread);
+		while (gameOver > 0 && killersAlive > 0) {
+			if (difficulty > 2)
+				lookAtMap();
+			gameOver -= bloodkill;
+			if (playerPosX <= 0)playerPosX = 1;
+			if (playerPosY <= 0)playerPosY = 1;
+			if (playerType == 4 && special > 0) {
+				Sleep(150);
+				special--;
+				if (special == 0)special = -60 - difficulty * 10;
+			}
+			else Sleep(500);
+
+			while (!(KEY_DOWN(VK_LBUTTON) || KEY_DOWN(VK_LSHIFT) || KEY_DOWN('W') || KEY_DOWN('A') || KEY_DOWN('S') || KEY_DOWN('D') || KEY_DOWN(VK_SPACE) || KEY_DOWN(VK_LEFT)	|| KEY_DOWN(VK_RIGHT) || KEY_DOWN(VK_UP) || KEY_DOWN(VK_DOWN) || KEY_DOWN(VK_NUMPAD5) || KEY_DOWN(VK_NUMPAD4) || KEY_DOWN(VK_NUMPAD6) || KEY_DOWN(VK_NUMPAD8) || KEY_DOWN(VK_NUMPAD2) || KEY_DOWN('Q') || KEY_DOWN('E'))) {
+				if (gameOver <= 0 || killersAlive == 0) {
+					setStep.join();
+					return gameOver > 0 && killersAlive == 0;
+				}
+				else if (KEY_DOWN(VK_ESCAPE)) {
+					paused = true;
+					if (MessageBox(NULL, L"‰Ω†Ë¶ÅÈÄÄÂá∫Êú¨Â±ÄÊ∏∏ÊàèÂêóÔºü", L"ÊèêÁ§∫",
+						MB_ICONINFORMATION | MB_YESNO) == IDYES) {
+						gameOver = 0;
+						paused = false;
+						setStep.join();
 						return false;
 					}
-					paused=false;
+					paused = false;
 				}
-				else _sleep(5);
+				else if (PlayerTargetX != -1 || PlayerTargetY != -1) {
+					if (playerAutoRoad[playerPosX - 1][playerPosY]) {
+						direction = 0;
+						if (mapG[playerPosX - 1][playerPosY][playerPosZ] != 1
+							&& mapG[playerPosX - 1][playerPosY][playerPosZ] != -1)
+							playerPosX--;
+					}
+					else if (playerAutoRoad[playerPosX][playerPosY - 1]) {
+						direction = 1;
+						if (mapG[playerPosX][playerPosY - 1][playerPosZ] != 1
+							&& mapG[playerPosX][playerPosY - 1][playerPosZ] != -1)
+							playerPosY--;
+					}
+					else if (playerAutoRoad[playerPosX + 1][playerPosY]) {
+						direction = 2;
+						if (mapG[playerPosX + 1][playerPosY][playerPosZ] != 1
+							&& mapG[playerPosX + 1][playerPosY][playerPosZ] != -1)
+							playerPosX++;
+					}
+					else if (playerAutoRoad[playerPosX][playerPosY + 1]) {
+						direction = 3;
+						if (mapG[playerPosX][playerPosY + 1][playerPosZ] != 1
+							&& mapG[playerPosX][playerPosY + 1][playerPosZ] != -1)
+							playerPosY++;
+					}
+					if (playerAutoRoad[playerPosX][playerPosY])
+						playerAutoRoad[playerPosX][playerPosY] = false;
+					else{
+						memset(playerAutoRoad, false, sizeof(playerAutoRoad));
+						PlayerTargetX = -1;
+						PlayerTargetY = -1;
+					}
+				}
+				else Sleep(5);
 			}
-			if(KEY_DOWN(VK_UP)||KEY_DOWN('W')||KEY_DOWN(VK_NUMPAD8)) {
-				direction=0;
-				if(mapG[playerPosX-1][playerPosY][playerPosZ]!=1
-				        &&mapG[playerPosX-1][playerPosY][playerPosZ]!=-1)
+			if (KEY_DOWN(VK_LBUTTON)) {
+				POINT mouse = getMouse();
+				if (inMap(mouse.x / 2, mouse.y - 1)) {
+					memset(playerAutoRoad, false, sizeof(playerAutoRoad));
+					if (autoRoad(mouse.x / 2, mouse.y - 1)) {
+						PlayerTargetX = mouse.x / 2;
+						PlayerTargetY = mouse.y - 1;
+					}
+					else
+						memset(playerAutoRoad, false, sizeof(playerAutoRoad));
+				}
+			}
+			if (KEY_DOWN('Q'))DebugZ++;
+			if (KEY_DOWN('E'))DebugZ--;
+			if (KEY_DOWN(VK_UP) || KEY_DOWN('W') || KEY_DOWN(VK_NUMPAD8)) {
+				direction = 0;
+				if (mapG[playerPosX - 1][playerPosY][playerPosZ] != 1
+					&& mapG[playerPosX - 1][playerPosY][playerPosZ] != -1)
 					playerPosX--;
 			}
-			if(KEY_DOWN(VK_LEFT)||KEY_DOWN('A')||KEY_DOWN(VK_NUMPAD4)) {
-				direction=1;
-				if(mapG[playerPosX][playerPosY-1][playerPosZ]!=1
-				        &&mapG[playerPosX][playerPosY-1][playerPosZ]!=-1)
+			if (KEY_DOWN(VK_LEFT) || KEY_DOWN('A') || KEY_DOWN(VK_NUMPAD4)) {
+				direction = 1;
+				if (mapG[playerPosX][playerPosY - 1][playerPosZ] != 1
+					&& mapG[playerPosX][playerPosY - 1][playerPosZ] != -1)
 					playerPosY--;
 			}
-			if(KEY_DOWN(VK_DOWN)||KEY_DOWN('S')||KEY_DOWN(VK_NUMPAD2)) {
-				direction=2;
-				if(mapG[playerPosX+1][playerPosY][playerPosZ]!=1
-				        &&mapG[playerPosX+1][playerPosY][playerPosZ]!=-1)
+			if (KEY_DOWN(VK_DOWN) || KEY_DOWN('S') || KEY_DOWN(VK_NUMPAD2)) {
+				direction = 2;
+				if (mapG[playerPosX + 1][playerPosY][playerPosZ] != 1
+					&& mapG[playerPosX + 1][playerPosY][playerPosZ] != -1)
 					playerPosX++;
 			}
-			if(KEY_DOWN(VK_RIGHT)||KEY_DOWN('D')||KEY_DOWN(VK_NUMPAD6)) {
-				direction=3;
-				if(mapG[playerPosX][playerPosY+1][playerPosZ]!=1
-				        &&mapG[playerPosX][playerPosY+1][playerPosZ]!=-1)
+			if (KEY_DOWN(VK_RIGHT) || KEY_DOWN('D') || KEY_DOWN(VK_NUMPAD6)) {
+				direction = 3;
+				if (mapG[playerPosX][playerPosY + 1][playerPosZ] != 1
+					&& mapG[playerPosX][playerPosY + 1][playerPosZ] != -1)
 					playerPosY++;
 			}
-			if(KEY_DOWN(VK_SPACE)||KEY_DOWN('F')||KEY_DOWN(VK_NUMPAD5)) {
-				switch(playerType) {
+			if (KEY_DOWN(VK_SPACE) || KEY_DOWN('F') || KEY_DOWN(VK_NUMPAD5)) {
+				switch (playerType) {
+				case 0:
+					break;
+				case 1:
+					switch (direction) {
 					case 0:
-						break;
-					case 1:
-						switch(direction) {
-							case 0:
-								if(mapG[playerPosX-1][playerPosY][playerPosZ]==1) {
-									mapG[playerPosX-1][playerPosY][playerPosZ]=0;
-									special++;
-									specialScore++;
-									break;
-								}
-								if(mapG[playerPosX-1][playerPosY][playerPosZ]==0&&special) {
-									mapG[playerPosX-1][playerPosY][playerPosZ]=1;
-									special--;
-									specialScore++;
-									break;
-								}
-								break;
-							case 1:
-								if(mapG[playerPosX][playerPosY-1][playerPosZ]==1) {
-									mapG[playerPosX][playerPosY-1][playerPosZ]=0;
-									special++;
-									specialScore++;
-									break;
-								}
-								if(mapG[playerPosX][playerPosY-1][playerPosZ]==0&&special) {
-									mapG[playerPosX][playerPosY-1][playerPosZ]=1;
-									special--;
-									specialScore++;
-									break;
-								}
-								break;
-							case 2:
-								if(mapG[playerPosX+1][playerPosY][playerPosZ]==1) {
-									mapG[playerPosX+1][playerPosY][playerPosZ]=0;
-									special++;
-									specialScore++;
-									break;
-								}
-								if(mapG[playerPosX+1][playerPosY][playerPosZ]==0&&special) {
-									mapG[playerPosX+1][playerPosY][playerPosZ]=1;
-									special--;
-									specialScore++;
-									break;
-								}
-								break;
-							case 3:
-								if(mapG[playerPosX][playerPosY+1][playerPosZ]==1) {
-									mapG[playerPosX][playerPosY+1][playerPosZ]=0;
-									special++;
-									specialScore++;
-									break;
-								}
-								if(mapG[playerPosX][playerPosY+1][playerPosZ]==0&&special) {
-									mapG[playerPosX][playerPosY+1][playerPosZ]=1;
-									special--;
-									specialScore++;
-									break;
-								}
-								break;
+						if (mapG[playerPosX - 1][playerPosY][playerPosZ] == 1) {
+							mapG[playerPosX - 1][playerPosY][playerPosZ] = 0;
+							special++;
+							specialScore++;
+							break;
+						}
+						if (mapG[playerPosX - 1][playerPosY][playerPosZ] == 0 && special) {
+							mapG[playerPosX - 1][playerPosY][playerPosZ] = 1;
+							special--;
+							specialScore++;
+							break;
 						}
 						break;
-					case 2: {
-						if(gameOver<800-100*difficulty) {
-							specialScore+=10;
-							special+=30+difficulty*10;
-							if(special>=100) {
-								gameOver+=(special/100)*100;
-								special%=100;
-							}
+					case 1:
+						if (mapG[playerPosX][playerPosY - 1][playerPosZ] == 1) {
+							mapG[playerPosX][playerPosY - 1][playerPosZ] = 0;
+							special++;
+							specialScore++;
+							break;
+						}
+						if (mapG[playerPosX][playerPosY - 1][playerPosZ] == 0 && special) {
+							mapG[playerPosX][playerPosY - 1][playerPosZ] = 1;
+							special--;
+							specialScore++;
+							break;
+						}
+						break;
+					case 2:
+						if (mapG[playerPosX + 1][playerPosY][playerPosZ] == 1) {
+							mapG[playerPosX + 1][playerPosY][playerPosZ] = 0;
+							special++;
+							specialScore++;
+							break;
+						}
+						if (mapG[playerPosX + 1][playerPosY][playerPosZ] == 0 && special) {
+							mapG[playerPosX + 1][playerPosY][playerPosZ] = 1;
+							special--;
+							specialScore++;
+							break;
+						}
+						break;
+					case 3:
+						if (mapG[playerPosX][playerPosY + 1][playerPosZ] == 1) {
+							mapG[playerPosX][playerPosY + 1][playerPosZ] = 0;
+							special++;
+							specialScore++;
+							break;
+						}
+						if (mapG[playerPosX][playerPosY + 1][playerPosZ] == 0 && special) {
+							mapG[playerPosX][playerPosY + 1][playerPosZ] = 1;
+							special--;
+							specialScore++;
+							break;
 						}
 						break;
 					}
-					case 3:
-						if(special) {
-							switch(direction) {
-								case 0:
-									if(mapG[playerPosX-1][playerPosY][playerPosZ]==0
-									        &&!isAnotherTrapHere(playerPosX-1,playerPosY,playerPosZ,-1)) {
-										trapPosX[2*NUM_KILLERS-special]=playerPosX-1;
-										trapPosY[2*NUM_KILLERS-special]=playerPosY;
-										trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-										special--;
-										specialScore++;
-									}
-									break;
-								case 1:
-									if(mapG[playerPosX][playerPosY-1][playerPosZ]==0
-									        &&!isAnotherTrapHere(playerPosX,playerPosY-1,playerPosZ,-1)) {
-										trapPosX[2*NUM_KILLERS-special]=playerPosX;
-										trapPosY[2*NUM_KILLERS-special]=playerPosY-1;
-										trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-										special--;
-										specialScore++;
-									}
-									break;
-								case 2:
-									if(mapG[playerPosX+1][playerPosY][playerPosZ]==0
-									        &&!isAnotherTrapHere(playerPosX+1,playerPosY,playerPosZ,-1)) {
-										trapPosX[2*NUM_KILLERS-special]=playerPosX+1;
-										trapPosY[2*NUM_KILLERS-special]=playerPosY;
-										trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-										special--;
-										specialScore++;
-									}
-									break;
-								case 3:
-									if(mapG[playerPosX][playerPosY+1][playerPosZ]==0
-									        &&!isAnotherTrapHere(playerPosX,playerPosY+1,playerPosZ,-1)) {
-										trapPosX[2*NUM_KILLERS-special]=playerPosX;
-										trapPosY[2*NUM_KILLERS-special]=playerPosY+1;
-										trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-										special--;
-										specialScore++;
-									}
-									break;
+					break;
+				case 2: {
+					if (gameOver < 800 - 100 * difficulty) {
+						specialScore += 10;
+						special += 30 + difficulty * 10;
+						if (special >= 100) {
+							gameOver += (special / 100) * 100;
+							special %= 100;
+						}
+					}
+					break;
+				}
+				case 3:
+					if (special) {
+						switch (direction) {
+						case 0:
+							if (mapG[playerPosX - 1][playerPosY][playerPosZ] == 0
+								&& !isAnotherTrapHere(playerPosX - 1, playerPosY, playerPosZ, -1)) {
+								trapPosX[2 * NUM_KILLERS - special] = playerPosX - 1;
+								trapPosY[2 * NUM_KILLERS - special] = playerPosY;
+								trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+								special--;
+								specialScore++;
+							}
+							break;
+						case 1:
+							if (mapG[playerPosX][playerPosY - 1][playerPosZ] == 0
+								&& !isAnotherTrapHere(playerPosX, playerPosY - 1, playerPosZ, -1)) {
+								trapPosX[2 * NUM_KILLERS - special] = playerPosX;
+								trapPosY[2 * NUM_KILLERS - special] = playerPosY - 1;
+								trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+								special--;
+								specialScore++;
+							}
+							break;
+						case 2:
+							if (mapG[playerPosX + 1][playerPosY][playerPosZ] == 0
+								&& !isAnotherTrapHere(playerPosX + 1, playerPosY, playerPosZ, -1)) {
+								trapPosX[2 * NUM_KILLERS - special] = playerPosX + 1;
+								trapPosY[2 * NUM_KILLERS - special] = playerPosY;
+								trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+								special--;
+								specialScore++;
+							}
+							break;
+						case 3:
+							if (mapG[playerPosX][playerPosY + 1][playerPosZ] == 0
+								&& !isAnotherTrapHere(playerPosX, playerPosY + 1, playerPosZ, -1)) {
+								trapPosX[2 * NUM_KILLERS - special] = playerPosX;
+								trapPosY[2 * NUM_KILLERS - special] = playerPosY + 1;
+								trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+								special--;
+								specialScore++;
 							}
 							break;
 						}
-					case 4:
-						if(special!=0)break;
-						special=30+difficulty*5;
-						specialScore+=10;
-						int i=5+difficulty;
-						switch(direction) {
-							case 0:
-								for(; playerPosX-i<=0||mapG[playerPosX-i][playerPosY][playerPosZ]==1
-								        ||mapG[playerPosX-i][playerPosY][playerPosZ]==-1; i--);
-								playerPosX-=i;
-								break;
-							case 1:
-								for(; playerPosY-i<=0||mapG[playerPosX][playerPosY-i][playerPosZ]==1
-								        ||mapG[playerPosX][playerPosY-i][playerPosZ]==-1; i--);
-								playerPosY-=i;
-								break;
-							case 2:
-								for(; playerPosX+i>=22||mapG[playerPosX+i][playerPosY][playerPosZ]==1
-								        ||mapG[playerPosX+i][playerPosY][playerPosZ]==-1; i--);
-								playerPosX+=i;
-								break;
-							case 3:
-								for(; playerPosY+i>=22||mapG[playerPosX][playerPosY+i][playerPosZ]==1
-								        ||mapG[playerPosX][playerPosY+i][playerPosZ]==-1; i--);
-								playerPosY+=i;
-								break;
-						}
+						break;
+					}
+				case 4:
+					if (special != 0)break;
+					special = 30 + difficulty * 5;
+					specialScore += 10;
+					int i = 5 + difficulty;
+					switch (direction) {
+					case 0:
+						for (; playerPosX - i <= 0 || mapG[playerPosX - i][playerPosY][playerPosZ] == 1
+							|| mapG[playerPosX - i][playerPosY][playerPosZ] == -1; i--);
+						playerPosX -= i;
+						break;
+					case 1:
+						for (; playerPosY - i <= 0 || mapG[playerPosX][playerPosY - i][playerPosZ] == 1
+							|| mapG[playerPosX][playerPosY - i][playerPosZ] == -1; i--);
+						playerPosY -= i;
+						break;
+					case 2:
+						for (; playerPosX + i >= 22 || mapG[playerPosX + i][playerPosY][playerPosZ] == 1
+							|| mapG[playerPosX + i][playerPosY][playerPosZ] == -1; i--);
+						playerPosX += i;
+						break;
+					case 3:
+						for (; playerPosY + i >= 22 || mapG[playerPosX][playerPosY + i][playerPosZ] == 1
+							|| mapG[playerPosX][playerPosY + i][playerPosZ] == -1; i--);
+						playerPosY += i;
+						break;
+					}
 				}
-				if(KEY_DOWN(VK_RETURN))
-					if(difficulty==-1) {
-						killersAlive=0;
+				if (KEY_DOWN(VK_RETURN))
+					if (difficulty == -1) {
+						killersAlive = 0;
 						return true;
 					}
 			}
-			switch(playerType) {
-				case 2:
-					if(special>=10)special-=10;
-					else special=0;
-					break;
+			switch (playerType) {
+			case 2:
+				if (special >= 10)special -= 10;
+				else special = 0;
+				break;
 			}
-			if(mapG[playerPosX][playerPosY][playerPosZ]>=2
-			        &&mapG[playerPosX][playerPosY][playerPosZ]<=9) {
-				playerPosZ=10-mapG[playerPosX][playerPosY][playerPosZ];
-				if(mapG[playerPosX][playerPosY][playerPosZ]>=2
-				        &&mapG[playerPosX][playerPosY][playerPosZ]<=9)
-					switch(direction) {
-						case 0:
-							playerPosX+=1;
-							direction=2;
-							break;
-						case 1:
-							playerPosY+=1;
-							direction=3;
-							break;
-						case 2:
-							playerPosX-=1;
-							direction=0;
-							break;
-						case 3:
-							playerPosY-=1;
-							direction=1;
-							break;
+			if (mapG[playerPosX][playerPosY][playerPosZ] >= 2
+				&& mapG[playerPosX][playerPosY][playerPosZ] <= 9) {
+				playerPosZ = 10 - mapG[playerPosX][playerPosY][playerPosZ];
+					switch (direction) {
+					case 0:
+						playerPosX += 1;
+						direction = 2;
+						break;
+					case 1:
+						playerPosY += 1;
+						direction = 3;
+						break;
+					case 2:
+						playerPosX -= 1;
+						direction = 0;
+						break;
+					case 3:
+						playerPosY -= 1;
+						direction = 1;
+						break;
 					}
-				if(playerType==4&&special>0) {
-					_sleep(150);
+				if (playerType == 4 && special > 0) {
+					Sleep(SURVIVOR_SPEED(Difficulty)/10*3);
 					special--;
-					if(special==0)special=-60-difficulty*10;
-				} else _sleep(500);
+					if (special == 0)special = -60 - difficulty * 10;
+				}
+				else Sleep(SURVIVOR_SPEED(Difficulty));
 			}
 		}
-		if(gameOver<=0||killersAlive>0)
+		setStep.join();
+		if (gameOver <= 0 || killersAlive > 0)
 			return false;
 		else return true;
 	}
 
-	bool cannotgo(int i,int ID) {
+	bool cannotgo(int i, int ID) {
 		switch (i) {
-			case 0:
-				if(!mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID]-1,killerPosY[ID],killerPosZ[ID]))return false;
-			case 1:
-				if(!mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID],killerPosY[ID]-1,killerPosZ[ID]))return false;
-			case 2:
-				if(!mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID]+1,killerPosY[ID],killerPosZ[ID]))return false;
-			case 3:
-				if(!mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID],killerPosY[ID]+1,killerPosZ[ID]))return false;
+		case 0:
+			if (!mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID] - 1, killerPosY[ID], killerPosZ[ID]))return false;
+		case 1:
+			if (!mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID], killerPosY[ID] - 1, killerPosZ[ID]))return false;
+		case 2:
+			if (!mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID] + 1, killerPosY[ID], killerPosZ[ID]))return false;
+		case 3:
+			if (!mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID], killerPosY[ID] + 1, killerPosZ[ID]))return false;
 		}
 		return true;
 	}
 
-	int min4(int a,int b,int c,int d) {
-		return min(min(a,b),min(c,d));
+	int min4(int a, int b, int c, int d) {
+		return min(min(a, b), min(c, d));
 	}
 
 
 	int killerChooseWhereToGo(int ID) {
-		int Steps[4]= {	steps[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]],
-		                steps[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]],
-		                steps[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]],
-		                steps[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]
-		              };
-		int maps[4]= {	mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]],
-		                mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]],
-		                mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]],
-		                mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]
-		             };
-		int minDirection=-1,minChoice=INT_MAX,i;
-		for(i=0; i<4; i++)
-			if(Steps[i]<minChoice&&maps[i]!=-1&&maps[i]!=1) {
-				minChoice=Steps[i];
-				minDirection=i;
+		int Steps[4] = { steps[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]],
+						steps[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]],
+						steps[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]],
+						steps[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]]
+		};
+		int maps[4] = { mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]],
+						mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]],
+						mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]],
+						mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]]
+		};
+		int minDirection = -1, minChoice = INT_MAX, i;
+		for (i = 0; i < 4; i++)
+			if (Steps[i] < minChoice && maps[i] != -1 && maps[i] != 1) {
+				minChoice = Steps[i];
+				minDirection = i;
 			}
 		return minDirection;
 	}
 
-	void *killer(void *threadid) {
-		int attackForce,ID=*((int*)threadid),invisibleTime=8-difficulty*1;
-		alive[ID]=true;
-		stop[ID]=true;
-		if(Floor>1)
-			killerPosZ[ID]=1+rand()%(Floor-1);
-		else killerPosZ[ID]=1;
-		killerPosX[ID]=10+rand()%10-rand()%10;
-		killerPosY[ID]=10+rand()%10-rand()%10;
-		while(alive[ID]&&(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]!=0||isAnotherTrapHere(killerPosX[ID],killerPosY[ID],killerPosZ[ID],-1)||isPlayerAround(playerPosX,playerPosY,playerPosZ,killerPosX[ID],killerPosY[ID],killerPosZ[ID]))) {
-			killerPosX[ID]=10+rand()%10-rand()%10;
-			killerPosY[ID]=10+rand()%10-rand()%10;
-		}
-		while(!start);
-		_sleep(5000);
-		stop[ID]=false;
-		while(gameOver>0&&alive[ID]) {
-			attackForce=90+20*difficulty+(NUM_KILLERS-killersAlive)*(2+difficulty);
-			if(invisibleTime>0)
-				invisibleTime--;
-			while(paused)_sleep(10);
-			if(ability==1)
-				if(gameOver<400)
-					decay=(400-gameOver)/100;
-			if(killersSleep) {
-				while(killersSleep)
-					if(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]==1
-					        ||mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]==-1) {
-						mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]=0;
-						gameOver-=100;
-						attactCount++;
-					}
-				attackForce=int(1.5*attackForce);
+	int gcd(int x, int y) {
+		if (x > y)return gcd(y, x);
+		if (x <= 1)return y;
+		return gcd(y, x % y);
+	}
+
+	void killer(int nums) {
+		int ID = -1;
+		int delays[20] = { 0 };
+		int attackForce, invisibleTime = 8 - difficulty * 1;
+		for(int i=0;i<nums;i++){
+					alive[ID] = true;
+			stop[ID] = true;
+			if (Floor > 1)
+				killerPosZ[ID] = 1 + rand() % (Floor - 1);
+			else killerPosZ[ID] = 1;
+			killerPosX[ID] = 10 + rand() % 10 - rand() % 10;
+			killerPosY[ID] = 10 + rand() % 10 - rand() % 10;
+			while (alive[ID] && (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] != 0 || isAnotherTrapHere(killerPosX[ID], killerPosY[ID], killerPosZ[ID], -1) || isPlayerAround(playerPosX, playerPosY, playerPosZ, killerPosX[ID], killerPosY[ID], killerPosZ[ID]))) {
+				killerPosX[ID] = 10 + rand() % 10 - rand() % 10;
+				killerPosY[ID] = 10 + rand() % 10 - rand() % 10;
 			}
-			killerDirection[ID]=killerChooseWhereToGo(ID);
-			switch(killerDirection[ID]) {
+		}
+		while (!start);
+		Sleep(5000);
+		for (int i = 0; i < nums; i++) 
+			stop[ID] = false;
+		while (gameOver > 0 && killersAlive > 0) {
+			do{
+				ID++;
+				if (ID >= nums)ID = 0;
+			} while (ID < nums && !alive[ID]);
+			if (ID >= nums) { 
+				ID = 0;
+				int timeGCD = 10000;
+				for (int i = 0; i < nums; i++)if (alive[i])timeGCD = gcd(timeGCD,delays[i]);
+				if (timeGCD == 10000)
+					Sleep(10);
+				else { 
+					Sleep(timeGCD); 
+					for (int i = 0; i < nums; i++)
+						delays[i] = max(delays[i]-timeGCD,0);
+				}
+			}
+
+			if (gameOver > 0 && alive[ID]) {
+				attackForce = 90 + 20 * difficulty + (NUM_KILLERS - killersAlive) * (2 + difficulty);
+				if (invisibleTime > 0)
+					invisibleTime--;
+				while (paused)Sleep(10);
+				if (ability == 1)
+					if (gameOver < 400)
+						Decay = (400 - gameOver) / 100;
+				if (killersSleep) {
+					while (killersSleep)
+						if (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] == 1
+							|| mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] == -1) {
+							mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] = 0;
+							gameOver -= 100;
+							attactCount++;
+						}
+					attackForce = int(1.5 * attackForce);
+				}
+				killerDirection[ID] = killerChooseWhereToGo(ID);
+				switch (killerDirection[ID]) {
 				case 0:
-					if(mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID]-1,killerPosY[ID],killerPosZ[ID])))
+					if (mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]] != 1
+						&& mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]] != -1
+						&& (!isKillerHere(killerPosX[ID] - 1, killerPosY[ID], killerPosZ[ID])))
 						killerPosX[ID]--;
 					break;
 				case 1:
-					if(mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID],killerPosY[ID]-1,killerPosZ[ID])))
+					if (mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]] != 1
+						&& mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]] != -1
+						&& (!isKillerHere(killerPosX[ID], killerPosY[ID] - 1, killerPosZ[ID])))
 						killerPosY[ID]--;
 					break;
 				case 2:
-					if(mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID]+1,killerPosY[ID],killerPosZ[ID])))
+					if (mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]] != 1
+						&& mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]] != -1
+						&& (!isKillerHere(killerPosX[ID] + 1, killerPosY[ID], killerPosZ[ID])))
 						killerPosX[ID]++;
 					break;
 				case 3:
-					if(mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID],killerPosY[ID]+1,killerPosZ[ID])))
+					if (mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]] != 1
+						&& mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]] != -1
+						&& (!isKillerHere(killerPosX[ID], killerPosY[ID] + 1, killerPosZ[ID])))
 						killerPosY[ID]++;
 					break;
-			}
-			if(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]>=2
-			        &&mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]<=9) {
-				killerPosZ[ID]=10-mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]];
-				if(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]!=-1&&mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]!=1)
-					switch(killerDirection[ID]) {
+				}
+				if (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] >= 2
+					&& mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] <= 9) {
+					killerPosZ[ID] = 10 - mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]];
+					if (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] != -1 && mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] != 1)
+						switch (killerDirection[ID]) {
 						case 0:
-							playerPosX+=1;
-							killerDirection[ID]=2;
+							playerPosX += 1;
+							killerDirection[ID] = 2;
 							break;
 						case 1:
-							playerPosY+=1;
-							killerDirection[ID]=3;
+							playerPosY += 1;
+							killerDirection[ID] = 3;
 							break;
 						case 2:
-							playerPosX-=1;
-							killerDirection[ID]=0;
+							playerPosX -= 1;
+							killerDirection[ID] = 0;
 							break;
 						case 3:
-							playerPosY-=1;
-							killerDirection[ID]=1;
+							playerPosY -= 1;
+							killerDirection[ID] = 1;
 							break;
-					}
-				_sleep(1500+difficulty*500);
+						}
+					delays[ID] += (KILLER_FLOOR(Difficulty));
+					continue;
+				}
+				delays[ID] += (KILLER_SPEED(Difficulty));
+				continue;
+				if (isAnotherTrapHere(killerPosX[ID], killerPosY[ID], killerPosZ[ID], -1)
+					&& (!invisibleTime)) {
+					killsByTraps++;
+					if (killsByBlock >= 2 && (achievementsUnlockedNow / 8) % 2 == 0)
+						achieveBlock = true;
+					killsByBlock = 0;
+					int i;
+					for (i = 0; !(trapPosX[i] == killerPosX[ID] && trapPosY[i] == killerPosY[ID]
+						&& trapPosZ[i] == killerPosZ[ID]); i++);
+					trapPosX[i] = -1;
+					trapPosY[i] = -1;
+					trapPosZ[i] = -1;
+					killersAlive--;
+					killerPosX[ID] = -1;
+					killerPosY[ID] = -1;
+					killerPosZ[ID] = -1;
+					alive[ID] = false;
+					gameOver += HEALTH_PER_KILL(Difficulty);
+					continue;
+				}
+				if (isPlayerAround(playerPosX, playerPosY, playerPosZ, killerPosX[ID],
+					killerPosY[ID], killerPosZ[ID]) && (!invisibleTime)) {
+					gameOver -= attackForce;
+					bloodkill *= 2;
+					if (ability == 2)
+						attackForce += 25;
+					stop[ID] = true;
+					delays[ID] += (KILLER_STUN(difficulty));
+					stop[ID] = false;
+					if (killsWithoutHurt >= 2 && (achievementsUnlockedNow / 32) % 2 == 0)
+						achieveNotHurt = true;
+					killsWithoutHurt = 0;
+				}
+				if (isPlayerAround(playerPosX, playerPosY, playerPosZ, killerPosX[ID],
+					killerPosY[ID], killerPosZ[ID]) && invisibleTime) {
+					stop[ID] = true;
+					delays[ID] += (5000);
+					stop[ID] = false;
+					invisibleTime = 0;
+				}
+				if ((mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] == 1) && (!invisibleTime)) {
+					killsByBlock++;
+					if (killsByTraps >= 2 && (achievementsUnlockedNow / 2) % 2 == 0)
+						achieveTraps = true;
+					killsByTraps = 0;
+					killersAlive--;
+					killerPosX[ID] = -1;
+					killerPosY[ID] = -1;
+					killerPosZ[ID] = -1;
+					alive[ID] = false;
+					gameOver += 100;
+					continue;
+				}
 			}
-			_sleep(300+difficulty*100);
-			if(isAnotherTrapHere(killerPosX[ID],killerPosY[ID],killerPosZ[ID],-1)
-			        &&(!invisibleTime)) {
-				killsByTraps++;
-				if(killsByBlock>=2&&(achievementsUnlockedNow/8)%2==0)
-					achieveBlock=true;
-				killsByBlock=0;
-				int i;
-				for(i=0; !(trapPosX[i]==killerPosX[ID]&&trapPosY[i]==killerPosY[ID]
-				           &&trapPosZ[i]==killerPosZ[ID]); i++);
-				trapPosX[i]=-1;
-				trapPosY[i]=-1;
-				trapPosZ[i]=-1;
-				killersAlive--;
-				killerPosX[ID]=-1;
-				killerPosY[ID]=-1;
-				killerPosZ[ID]=-1;
-				alive[ID]=false;
-				gameOver+=100;
-				return voidptr;
-			}
-			if(isPlayerAround(playerPosX,playerPosY,playerPosZ,killerPosX[ID],
-			                  killerPosY[ID],killerPosZ[ID])&&(!invisibleTime)) {
-				gameOver-=attackForce;
-				bloodkill*=2;
-				if(ability==2)
-					attackForce+=25;
-				stop[ID]=true;
-				_sleep(9000+difficulty*2000);
-				stop[ID]=false;
-				if(killsWithoutHurt>=2&&(achievementsUnlockedNow/32)%2==0)
-					achieveNotHurt=true;
-				killsWithoutHurt=0;
-			}
-			if(isPlayerAround(playerPosX,playerPosY,playerPosZ,killerPosX[ID],
-			                  killerPosY[ID],killerPosZ[ID])&&invisibleTime) {
-				stop[ID]=true;
-				_sleep(5000);
-				stop[ID]=false;
-				invisibleTime=0;
-			}
-			if((mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]==1)&&(!invisibleTime)) {
-				killsByBlock++;
-				if(killsByTraps>=2&&(achievementsUnlockedNow/2)%2==0)
-					achieveTraps=true;
-				killsByTraps=0;
-				killersAlive--;
-				killerPosX[ID]=-1;
-				killerPosY[ID]=-1;
-				killerPosZ[ID]=-1;
-				alive[ID]=false;
-				gameOver+=100;
-				return voidptr;
-			}
+			continue;
 		}
-		return voidptr;
 	}
-	
-	void *showMap(void *id) {
+
+	void showMap() {
 		system("cls");
 		system("color F0");
-		printf("              [º”‘ÿ÷–..]                  \n");
-		for(int i=0; i<22; i++) {
-			for(int j=0; j<22; j++) {
-				if(playerPosX==i&&playerPosY==j) {
-					switch(direction) {
+		printf("              [Âä†ËΩΩ‰∏≠..]                  \n");
+		startTime = time(NULL);
+		POINT mouse;
+		bool isMouse = false;
+		WORD normalColor;
+		while (gameOver > 0 && killersAlive > 0) {
+			if (gameOver < 200)system("color 4C");
+			else if (gameOver < 300)system("color C0");
+			else if (gameOver < 400)system("color F0");
+			else if (gameOver < 500)system("color 2F");
+			else system("color 2A");
+			if (gameOver < 200)normalColor = FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_RED;
+			else if (gameOver < 300)normalColor = BACKGROUND_INTENSITY | BACKGROUND_RED;
+			else if (gameOver < 400)normalColor = BACKGROUND_INTENSITY | BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_GREEN;
+			else if (gameOver < 500)normalColor = FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN | BACKGROUND_GREEN;
+			else normalColor = FOREGROUND_INTENSITY | FOREGROUND_GREEN | BACKGROUND_GREEN;
+			color(normalColor);
+			mouse = getMouse();
+			SetConsoleCursorPosition(hOut, posStart);
+			nowTime = time(NULL) - startTime;
+			printf("              [%2ld:%2ld:%2ld]                  \n", nowTime / 3600,
+				(nowTime / 60) % 60, nowTime % 60);
+			for (int i = 0; i < 22; i++) {
+				for (int j = 0; j < 22; j++) {
+					isMouse = (mouse.x / 2 == j && mouse.y == i + 1);
+					if (isMouse)
+						color(FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN);
+					if (playerPosX == i && playerPosY == j && DebugZ == 0) {
+						switch (direction) {
 						case 0:
-							printf("%c ",'\030');
+							printf("‚Üë");
 							break;
 						case 1:
-							printf("%c ",'\033');
+							printf("‚Üê");
 							break;
 						case 2:
-							printf("%c ",'\031');
+							printf("‚Üì");
 							break;
 						case 3:
-							printf("%c ",'\032');
+							printf("‚Üí");
 							break;
 						default:
 							exit(0);
+						}
 					}
-					continue;
-				} else if(mapG[i][j][playerPosZ]>=2&&mapG[i][j][playerPosZ]<=9) {
-					printf("%dF",10-mapG[i][j][playerPosZ]);
-					continue;
-				} else if(mapG[i][j][playerPosZ]==-1||((!(isKillerHere(i,j,playerPosZ)
-				                                        ||isAnotherTrapHere(i,j,playerPosZ,-1)
-				                                        ||watchable[i-playerPosX+22][j-playerPosY+22]))&&(!ability))
-				          ||((!watchable[i-playerPosX+22][j-playerPosY+22])&&ability&&difficulty>0)) {
-					printf("°ˆ");
-					continue;
-				} else if(isKillerHere(i,j,playerPosZ)) {
-					if(difficulty==-2) {
-						switch(killerDirection[killerHereID(i,j,playerPosZ)]) {
-							case 0:
-								printf("%c ",'\030');
-								break;
-							case 1:
-								printf("%c ",'\033');
-								break;
-							case 2:
-								printf("%c ",'\031');
-								break;
-							case 3:
-								printf("%c ",'\032');
-								break;
-							default:
-								exit(0);
-						}
-					} else
+					else if (mapG[i][j][playerPosZ + DebugZ] == -1 || ((!(isKillerHere(i, j, playerPosZ + DebugZ)
+						|| isAnotherTrapHere(i, j, playerPosZ + DebugZ, -1)
+						|| watchable[i - playerPosX + 22][j - playerPosY + 22])) && (!ability))
+						|| ((!watchable[i - playerPosX + 22][j - playerPosY + 22]) && ability && difficulty > 0)) {
+						printf("‚ñ†");
+					}
+					else if (isKillerHere(i, j, playerPosZ + DebugZ)) {
 						printf("K ");
-					continue;
-				} else if(isAnotherTrapHere(i,j,playerPosZ,-1)) {
-					printf("O ");
-					continue;
-				} else if(mapG[i][j][playerPosZ]==1) {
-					printf("°ı");
-					continue;
-				} else if(debugEnable&&difficulty==-2) {
-					if(steps[i][j][playerPosZ]>=100)printf("XX");
-					else printf("%2d",steps[i][j][playerPosZ]);
-					continue;
-				} else printf("  ");
-			}
-			printf("\n");
-		}
-		if(Floor>1)
-			printf("ƒ„‘⁄%d¬•,",playerPosZ);
-		printf(" £”‡…± ÷ ˝:%3d     ",killersAlive);
-		printf("HP:%3d ",gameOver);
-		for(int p=0; p<=1+gameOver/200; p++)
-			printf("°ˆ");
-		printf("              \n");
-		switch(playerType) {
-			case 0:
-				break;
-			case 1:
-				printf("ø…”√∑ΩøÈ ˝:%d     ",special);
-				break;
-			case 2:
-				printf("÷Œ¡∆Ω¯≥Ã:%d%c    ",special,'%');
-				for(int p=0; p<special/10; p++)
-					printf("°ˆ");
-				printf("                         ");
-				break;
-			case 3:
-				printf(" £”‡œ›⁄Â ˝:%d     ",special);
-				break;
-			case 4:
-				if(special<0) {
-					printf("ººƒ‹¿‰»¥÷–:");
-					for(int p=0; p<-special/6; p++)
-						printf("°ˆ");
-					for(int p=20; p>=-special/6; p--)printf("  ");
-				} else if(special>0) {
-					printf("≥Â¥Ã £”‡:");
-					for(int p=0; p<special/3; p++)
-						printf("°ˆ");
-					for(int p=20; p>=special/3; p--)printf("  ");
-				} else printf("…¡œ÷≥Â¥Ãø…”√°£     ");
-				break;
-			default:
-				printf("Œﬁ–ßµƒΩ«…´¿‡–Õ%d£°",playerType);
-		}
-		if(gameOver<200)system("color 4C");
-		else if(gameOver<300)system("color C0");
-		else if(gameOver<400)system("color F0");
-		else if(gameOver<500)system("color 2F");
-		else system("color 2A");
-		startTime=time(NULL);
-		while(gameOver>0&&killersAlive>0) {
-			SetConsoleCursorPosition(hOut,posStart);
-			nowTime=time(NULL)-startTime;
-			printf("              [%2ld:%2ld:%2ld]                  \n",nowTime/3600,
-			       (nowTime/60)%60,nowTime%60);
-			for(int i=0; i<22; i++) {
-				for(int j=0; j<22; j++) {
-					if(playerPosX==i&&playerPosY==j) {
-						switch(direction) {
-							case 0:
-								printf("%c ",'\030');
-								break;
-							case 1:
-								printf("%c ",'\033');
-								break;
-							case 2:
-								printf("%c ",'\031');
-								break;
-							case 3:
-								printf("%c ",'\032');
-								break;
-							default:
-								exit(0);
-						}
-						continue;
-					} else if(mapG[i][j][playerPosZ]==-1||((!(isKillerHere(i,j,playerPosZ)
-					                                        ||isAnotherTrapHere(i,j,playerPosZ,-1)
-					                                        ||watchable[i-playerPosX+22][j-playerPosY+22]))&&(!ability))
-					          ||((!watchable[i-playerPosX+22][j-playerPosY+22])&&ability&&difficulty>0)) {
-						printf("°ˆ");
-						continue;
-					} else if(isKillerHere(i,j,playerPosZ)) {
-						printf("K ");
-						continue;
-					} else if(isAnotherTrapHere(i,j,playerPosZ,-1)) {
-						printf("O ");
-						continue;
-					} else if(mapG[i][j][playerPosZ]==1) {
-						printf("°ı");
-						continue;
-					} else if(mapG[i][j][playerPosZ]>=2&&mapG[i][j][playerPosZ]<=9) {
-						printf("%dF",10-mapG[i][j][playerPosZ]);
-						continue;
-					} else if(debugEnable&&difficulty==-2) {
-						if(steps[i][j][playerPosZ]>=100)printf("XX");
-						else printf("%2d",steps[i][j][playerPosZ]);
-						continue;
-					} else printf("  ");
+					}
+					else if (isAnotherTrapHere(i, j, playerPosZ + DebugZ, -1)) {
+						printf("‚óã");
+					}
+					else if (mapG[i][j][playerPosZ + DebugZ] == 1) {
+						printf("‚ñ°");
+					}
+					else if (mapG[i][j][playerPosZ + DebugZ] >= 2 && mapG[i][j][playerPosZ + DebugZ] <= 9) {
+						printf("%dF", 10 - mapG[i][j][playerPosZ + DebugZ]);
+					}
+					else if (debugEnable && difficulty == -2) {
+						if (steps[i][j][playerPosZ + DebugZ] >= 100)
+							printf("XX");
+						else printf("%2d", steps[i][j][playerPosZ + DebugZ]);
+					}
+					else if (playerAutoRoad[i][j])
+						printf("‚ñ™");
+					else printf("  ");
+					if (isMouse)
+						color(normalColor);
+					isMouse = false;
 				}
 				printf("\n");
 			}
-			printf("«Û…˙’ﬂ‘⁄%d¬•, £”‡…± ÷ ˝:%3d     ",playerPosZ,killersAlive);
-			printf("HP:%3d ",gameOver);
-			for(int p=0; p<gameOver/100; p++)
-				printf("°ˆ");
+			printf("Ê±ÇÁîüËÄÖÂú®%dÊ•º,Ââ©‰ΩôÊùÄÊâãÊï∞:%3d     ", playerPosZ, killersAlive);
+			printf("\nHP:%3d ", gameOver);
+			for (int p = 0; p < gameOver / 100; p++)
+				printf("‚ñ†");
 			printf("                      \n");
-			switch(playerType) {
-				case 0:
-					break;
-				case 1:
-					printf("ø…”√∑ΩøÈ ˝:%d     ",special);
-					break;
-				case 2:
-					printf("÷Œ¡∆Ω¯≥Ã:%d%c    ",special,'%');
-					for(int p=0; p<special/10; p++)
-						printf("°ˆ");
-					printf("                         ");
-					break;
-				case 3:
-					printf(" £”‡œ›⁄Â ˝:%d     ",special);
-					break;
-				case 4:
-					if(special<0) {
-						printf("ººƒ‹¿‰»¥÷–:");
-						for(int p=0; p<-special/6; p++)
-							printf("°ˆ");
-						for(int p=20; p>=-special/6; p--)printf("  ");
-					} else if(special>0) {
-						printf("≥Â¥Ã £”‡:");
-						for(int p=0; p<special/3; p++)
-							printf("°ˆ");
-						for(int p=20; p>=special/3; p--)printf("  ");
-					} else printf("…¡œ÷≥Â¥Ãø…”√°£     ");
-					break;
-				default:
-					printf("Œﬁ–ßµƒΩ«…´¿‡–Õ%d£°",playerType);
+			switch (playerType) {
+			case 0:
+				break;
+			case 1:
+				printf("ÂèØÁî®ÊñπÂùóÊï∞:%d     ", special);
+				break;
+			case 2:
+				printf("Ê≤ªÁñóËøõÁ®ã:%d%c    ", special, '%');
+				for (int p = 0; p < special / 10; p++)
+					printf("‚ñ†");
+				printf("                         ");
+				break;
+			case 3:
+				printf("Ââ©‰ΩôÈô∑Èò±Êï∞:%d     ", special);
+				break;
+			case 4:
+				if (special < 0) {
+					printf("ÊäÄËÉΩÂÜ∑Âç¥‰∏≠:");
+					for (int p = 0; p < -special / 6; p++)
+						printf("‚ñ†");
+					for (int p = 20; p >= -special / 6; p--)printf("  ");
+				}
+				else if (special > 0) {
+					printf("ÂÜ≤Âà∫Ââ©‰Ωô:");
+					for (int p = 0; p < special / 3; p++)
+						printf("‚ñ†");
+					for (int p = 20; p >= special / 3; p--)printf("  ");
+				}
+				else printf("Èó™Áé∞ÂÜ≤Âà∫ÂèØÁî®„ÄÇ     ");
+				break;
+			default:
+				printf("Êó†ÊïàÁöÑËßíËâ≤Á±ªÂûã%dÔºÅ", playerType);
 			}
-			if(gameOver<200)system("color 4C");
-			else if(gameOver<300)system("color C0");
-			else if(gameOver<400)system("color F0");
-			else if(gameOver<500)system("color 2F");
-			else system("color 2A");
-			if(playerType==4&&special<0) {
+			if (playerType == 4 && special < 0) {
 				special++;
 			}
-			_sleep(50);
-			while(paused) {
-				startTime=time(NULL)-nowTime;
+			Sleep(50);
+			while (paused) {
+				startTime = time(NULL) - nowTime;
 			}
 		}
 		system("cls");
-		return voidptr;
+		return;
 	}
 
 	void teachingLesson() {
 		system("cls");
-		COORD posLesson= {12,10};
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("ª∂”≠ÕÊ 1 Survivor Versus 2 Killers!  ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("‘⁄’‚∏ˆƒ£ Ω¿Ô£¨ƒ„“™√Ê∂‘“ª¥Û»∫…± ÷°£         ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("…± ÷‘⁄”Œœ∑÷–ª·“‘◊÷∑˚ \"K\"¿¥±Ì æ°£             ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("”Œœ∑÷–ƒ„ª·±ª◊˜Œ™º˝Õ∑±Íº«£¨ π”√WASDªÚ…œœ¬◊Û”““∆∂Ø°£     ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("”Œœ∑÷–ª·ÀÊª˙≤˙…˙œ›⁄Â,”√◊÷∑˚\"O\"±Ì æ°£               ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("ƒ„≤ªª·±ªœ›⁄Â…À∫¶,µ´…± ÷ª·±ªœ›⁄Â…±À¿,Õ¨ ±œ›⁄Â±ª∆∆ªµ°£         ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("√ø√˚Ω«…´∂º”–◊‘º∫µƒ÷˜∂Øººƒ‹,”√FªÚSpaceº§ªÓ°£             ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("ƒ„“≤ø…“‘–Ø¥¯±ª∂Øººƒ‹,µ´Õ¨ ±“≤“™ ‹µΩ±ª∂Øººƒ‹µƒ∏∫√Ê–ßπ˚°£     ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("”Œœ∑∑÷≥…Àƒ∏ˆƒ—∂»£¨øÏ¿¥ÕÊ∞…£°                           ");
-		_sleep(2500);
+		COORD posLesson = { 12,10 };
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê¨¢ËøéÁé© 1 Survivor Versus 2 Killers!  ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Âú®Ëøô‰∏™Ê®°ÂºèÈáåÔºå‰Ω†Ë¶ÅÈù¢ÂØπ‰∏ÄÂ§ßÁæ§ÊùÄÊâã„ÄÇ         ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("ÊùÄÊâãÂú®Ê∏∏Êàè‰∏≠‰ºö‰ª•Â≠óÁ¨¶ \"K\"Êù•Ë°®Á§∫„ÄÇ             ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê∏∏Êàè‰∏≠‰Ω†‰ºöË¢´‰Ωú‰∏∫ÁÆ≠Â§¥Ê†áËÆ∞Ôºå‰ΩøÁî®WASDÊàñ‰∏ä‰∏ãÂ∑¶Âè≥ÁßªÂä®„ÄÇ     ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê∏∏Êàè‰∏≠‰ºöÈöèÊú∫‰∫ßÁîüÈô∑Èò±,Áî®Â≠óÁ¨¶\"O\"Ë°®Á§∫„ÄÇ               ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("‰Ω†‰∏ç‰ºöË¢´Èô∑Èò±‰º§ÂÆ≥,‰ΩÜÊùÄÊâã‰ºöË¢´Èô∑Èò±ÊùÄÊ≠ª,ÂêåÊó∂Èô∑Èò±Ë¢´Á†¥Âùè„ÄÇ         ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("ÊØèÂêçËßíËâ≤ÈÉΩÊúâËá™Â∑±ÁöÑ‰∏ªÂä®ÊäÄËÉΩ,Áî®FÊàñSpaceÊøÄÊ¥ª„ÄÇ             ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("‰Ω†‰πüÂèØ‰ª•Êê∫Â∏¶Ë¢´Âä®ÊäÄËÉΩ,‰ΩÜÂêåÊó∂‰πüË¶ÅÂèóÂà∞Ë¢´Âä®ÊäÄËÉΩÁöÑË¥üÈù¢ÊïàÊûú„ÄÇ     ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê∏∏ÊàèÂàÜÊàêÂõõ‰∏™ÈöæÂ∫¶ÔºåÂø´Êù•Áé©ÂêßÔºÅ                           ");
+		Sleep(2500);
 	}
 
 	void offlineSurvivor() {
-		memset(lastdirection,-1,sizeof(lastdirection));
-		memset(mapG,0x7f,sizeof(mapG));
-		special=0,score=0,difficulty=0,killsWithoutHurt=0,killsByBlock=0,killsByTraps=0;
-		scoreboard=fopen("suvirorScoreboard","r");
-		achievement=fopen("suvirorAchievement","r");
-		fscanf(achievement,"%lld",&achievementsUnlockedNow);
-		fscanf(scoreboard,"%d%lld%d",&historyMaxScore,&totalScore,&level);
-		debuger=fopen("DebugOutPut.txt","r");
-		if(debuger) {
-			debugEnable=true;
+		void* mems = malloc(sizeof(int) * 100000);
+		free(mems);
+		memset(lastdirection, -1, sizeof(lastdirection));
+		memset(mapG, 0x7f, sizeof(mapG));
+		special = 0, score = 0, difficulty = 0, killsWithoutHurt = 0, killsByBlock = 0, killsByTraps = 0;
+		scoreboard = fopen("suvirorScoreboard", "r");
+		achievement = fopen("suvirorAchievement", "r");
+		if (achievement != NULL)
+			fscanf(achievement, "%lld", &achievementsUnlockedNow);
+		if (scoreboard != NULL)
+			fscanf(scoreboard, "%d%lld%d", &historyMaxScore, &totalScore, &level);
+		debuger = fopen("DebugOutPut.txt", "r");
+		if (debuger) {
+			debugEnable = true;
 			fclose(debuger);
-			debuger=fopen("DebugOutPut.txt","w");
+			debuger = fopen("DebugOutPut.txt", "w+");
 		}
-cd:
-		_sleep(1000);
-		if(!chooseDifficulties()) {
+	cd:
+		Sleep(1000);
+		if (!chooseDifficulties()) {
 			fclose(debuger);
 			fclose(scoreboard);
 			fclose(achievement);
 			return;
 		}
-		switch(difficulty) {
-			case -2:
-				NUM_KILLERS=2;
-				NUM_VIEWMAXRADIUS=30;
-				NUM_VIEWMINRADIUS=30;
-				break;
-			case -1:
-				teachingLesson();
-				return;
-			case 0:
-				NUM_KILLERS=2;
-				NUM_VIEWMAXRADIUS=30;
-				break;
-			case 1:
-				NUM_KILLERS=5;
-				NUM_VIEWMAXRADIUS=10;
-				break;
-			case 2:
-				NUM_KILLERS=10;
-				NUM_VIEWMAXRADIUS=5;
-				break;
-			case 3:
-				NUM_KILLERS=15;
-				NUM_VIEWMAXRADIUS=5;
+		switch (difficulty) {
+		case -2:
+			NUM_KILLERS = 2;
+			NUM_VIEWMAXRADIUS = 30;
+			NUM_VIEWMINRADIUS = 30;
+			break;
+		case -1:
+			teachingLesson();
+			return;
+		case 0:
+			NUM_KILLERS = 2;
+			NUM_VIEWMAXRADIUS = 30;
+			break;
+		case 1:
+			NUM_KILLERS = 5;
+			NUM_VIEWMAXRADIUS = 10;
+			break;
+		case 2:
+			NUM_KILLERS = 10;
+			NUM_VIEWMAXRADIUS = 5;
+			break;
+		case 3:
+			NUM_KILLERS = 15;
+			NUM_VIEWMAXRADIUS = 5;
 		}
-		killersAlive=NUM_KILLERS;
-ct:
-		_sleep(1000);
-		if(!choosePlayerTypes())goto cd;
-		_sleep(1000);
-		if(!chooseAbilities())goto ct;
+		killersAlive = NUM_KILLERS;
+	ct:
+		Sleep(1000);
+		if (!choosePlayerTypes())goto cd;
+		Sleep(1000);
+		if (!chooseAbilities())goto ct;
 		system("cls");
-		printf("∞¥WASD“∆∂ØΩ«…´,∞¥Fº¸ªÚø’∏Ò π”√ººƒ‹\n");
-		pthread_t threads[20];
-		int indexes[20],i,loopTimes,loopTimesZ;
-		mapID='0'+abs(rand()*time(NULL))%NUM_MAXMAPNUM;
-		i=0;
+		thread threadKillers;
+		int indexes[20], i, loopTimes, loopTimesZ = 0, maxNum = 0;
+		i = 0;
+		//printf("Â≠óÁ¨¶ÈõÜÊµãËØïÔºö‚Üë‚Üí‚Üì‚Üê\n");
+		//Sleep(1000);
 		do {
 			i++;
-			mapNames="map";
-			mapNames+=char(mapID);
-			mapNames+=".map";
-			maper=fopen(mapNames.c_str(),"r");
-		} while(!maper||i<20);
-		if(!readMap()) {
-			printf("¥ÌŒÛ!µÿÕºŒƒº˛Àªµ!\n«Î”ÎŒ“√«¡™œµ“‘ªÒµ√µÿÕºŒƒº˛!\n");
+			mapNames = "map";
+			if (i < 10)
+				mapNames += char('0' + i);
+			else { 
+				mapNames += char('0' + i / 10);
+				mapNames += char('0' + i % 10); 
+			}
+			mapNames += ".map";
+			printf("Ê≠£Âú®Ê£ÄÁ¥¢Âú∞ÂõæÔºö%s\n", mapNames.c_str());
+			maper = fopen(mapNames.c_str(), "r");
+		} while (maper && i <= NUM_MAXMAPNUM);
+		maxNum = i - 1;
+		printf("ÂÖ±ÊâæÂà∞%dÂº†Âú∞Âõæ„ÄÇ\n", maxNum);
+		if (maxNum == 0) {
+			printf("ÈîôËØØ!Êú™ÊâæÂà∞Âú∞ÂõæÊñá‰ª∂!\nËØ∑‰∏éÊàë‰ª¨ËÅîÁ≥ª‰ª•Ëé∑ÂæóÂú∞ÂõæÊñá‰ª∂!\n");
+			system("pause");
+			exit(-1);
+		}
+		i = 1 + (rand() % maxNum);
+		mapNames = "map";
+		if (i < 10)
+			mapNames += char('0' + i);
+		else {
+			mapNames += char('0' + i / 10);
+			mapNames += char('0' + i % 10);
+		}
+		mapNames += ".map";
+		maper = fopen(mapNames.c_str(), "r");
+		if (!readMap(maper)) {
+			printf("ÈîôËØØ!Âú∞ÂõæÊñá‰ª∂ÊçüÂùè!\nËØ∑‰∏éÊàë‰ª¨ËÅîÁ≥ª‰ª•Ëé∑ÂæóÂú∞ÂõæÊñá‰ª∂!\n");
 			system("pause");
 			exit(-1);
 		}
 		fclose(maper);
-		i=1;
+		printf("ÊåâWASDÁßªÂä®ËßíËâ≤,ÊåâFÈîÆÊàñÁ©∫Ê†º‰ΩøÁî®ÊäÄËÉΩ\n");
+		i = 1;
 		system("cls");
-		printf("º”‘ÿ÷–...\n");
-		playerPosX=0,playerPosY=0,playerPosZ=1;
+		printf("Âä†ËΩΩ‰∏≠...\n");
+		playerPosX = 0, playerPosY = 0, playerPosZ = 1;
 		do {
-			playerPosX=1+abs(rand()*time(NULL))%20;
-			loopTimes=0;
+			playerPosX = 1 + abs(rand() * time(NULL)) % 20;
+			loopTimes = 0;
 			loopTimesZ++;
 			do {
-				playerPosY=1+abs(rand()*time(NULL))%20;
+				playerPosY = 1 + abs(rand() * time(NULL)) % 20;
 				loopTimes++;
-			} while(mapG[playerPosX][playerPosY][playerPosZ]||loopTimes<5);
-		} while(mapG[playerPosX][playerPosY][playerPosZ]);
-		gameOver=700-75*difficulty;
-		pthread_create(&threads[i],NULL,showMap,voidptr);
+			} while (mapG[playerPosX][playerPosY][playerPosZ] || loopTimes < 5);
+		} while (mapG[playerPosX][playerPosY][playerPosZ]);
+		gameOver = 700 - 75 * difficulty;
+		thread printMapT(showMap);
+		threadKillers = thread(killer,NUM_KILLERS);
 		setTrap();
-		for(i=0; i<NUM_KILLERS; i++) {
-			indexes[i] = i;
-			pthread_create(&threads[i],NULL,killer,(void*)(indexes+i));
-		}
-		result=run();
-		_sleep(1000);
-		if(result&&gameOver>0) {
+		result = run();
+		printMapT.join();
+		threadKillers.join();
+		Sleep(1000);
+		if (result && gameOver > 0) {
 			system("color 2A");
-			printf("”Œœ∑Ω· ¯£¨ƒ„”Æ¡À£°\n");
-		} else {
-			system("color 4C");
-			printf("”Œœ∑Ω· ¯£¨ƒ„ ‰¡À£°\n");
+			printf("Ê∏∏ÊàèÁªìÊùüÔºå‰Ω†Ëµ¢‰∫ÜÔºÅ\n");
 		}
-		_sleep(5000);
+		else {
+			system("color 4C");
+			printf("Ê∏∏ÊàèÁªìÊùüÔºå‰Ω†Ëæì‰∫ÜÔºÅ\n");
+		}
+		Sleep(5000);
 		system("cls");
-		if(result&&gameOver>0) {
-			if(achievementsUnlockedNow%2==0) {
-				achievementsUnlockedNow+=1;
+		if (result && gameOver > 0) {
+			if (achievementsUnlockedNow % 2 == 0) {
+				achievementsUnlockedNow += 1;
 				printAchieveAchievement(1);
-			} else if((achievementsUnlockedNow/4)%2==0&&difficulty==1) {
-				achievementsUnlockedNow+=4;
+			}
+			else if ((achievementsUnlockedNow / 4) % 2 == 0 && difficulty == 1) {
+				achievementsUnlockedNow += 4;
 				printAchieveAchievement(3);
-			} else if((achievementsUnlockedNow/16)%2==0&&difficulty==2) {
-				achievementsUnlockedNow+=16;
+			}
+			else if ((achievementsUnlockedNow / 16) % 2 == 0 && difficulty == 2) {
+				achievementsUnlockedNow += 16;
 				printAchieveAchievement(5);
-			} else if(difficulty==3) {
-				if((achievementsUnlockedNow/64)%2==0) {
-					achievementsUnlockedNow+=64;
+			}
+			else if (difficulty == 3) {
+				if ((achievementsUnlockedNow / 64) % 2 == 0) {
+					achievementsUnlockedNow += 64;
 					printAchieveAchievement(7);
 				}
-				if((achievementsUnlockedNow/128)%2==0&&special==3) {
-					achievementsUnlockedNow+=128;
+				if ((achievementsUnlockedNow / 128) % 2 == 0 && special == 3) {
+					achievementsUnlockedNow += 128;
 					printAchieveAchievement(8);
 				}
-				if((achievementsUnlockedNow/256)%2==0&&special==1) {
-					achievementsUnlockedNow+=256;
+				if ((achievementsUnlockedNow / 256) % 2 == 0 && special == 1) {
+					achievementsUnlockedNow += 256;
 					printAchieveAchievement(9);
 				}
-				if((achievementsUnlockedNow/512)%2==0&&special==1&&playerType==2) {
-					achievementsUnlockedNow+=512;
+				if ((achievementsUnlockedNow / 512) % 2 == 0 && special == 1 && playerType == 2) {
+					achievementsUnlockedNow += 512;
 					printAchieveAchievement(10);
 				}
-				if((achievementsUnlockedNow/2048)%2==0&&time(NULL)-startTime>=360) {
-					achievementsUnlockedNow+=2048;
+				if ((achievementsUnlockedNow / 2048) % 2 == 0 && time(NULL) - startTime >= 360) {
+					achievementsUnlockedNow += 2048;
 					printAchieveAchievement(12);
 				}
-				if((achievementsUnlockedNow/4096)%2==0&&playerType==0) {
-					achievementsUnlockedNow+=4096;
+				if ((achievementsUnlockedNow / 4096) % 2 == 0 && playerType == 0) {
+					achievementsUnlockedNow += 4096;
 					printAchieveAchievement(13);
 				}
 			}
-		} else {
-			if((achievementsUnlockedNow/512)%2==0&&difficulty==3
-			        &&(time(NULL)-startTime)>=600) {
-				achievementsUnlockedNow+=512;
+		}
+		else {
+			if ((achievementsUnlockedNow / 512) % 2 == 0 && difficulty == 3
+				&& (time(NULL) - startTime) >= 600) {
+				achievementsUnlockedNow += 512;
 				printAchieveAchievement(11);
 			}
 		}
-		if(achieveBlock||(killsByBlock>=2&&(achievementsUnlockedNow/8)%2==0)) {
-			achievementsUnlockedNow+=8;
+		if (achieveBlock || (killsByBlock >= 2 && (achievementsUnlockedNow / 8) % 2 == 0)) {
+			achievementsUnlockedNow += 8;
 			printAchieveAchievement(4);
 		}
-		if(achieveTraps||(killsByTraps>=2&&(achievementsUnlockedNow/2)%2==0)) {
-			achievementsUnlockedNow+=2;
+		if (achieveTraps || (killsByTraps >= 2 && (achievementsUnlockedNow / 2) % 2 == 0)) {
+			achievementsUnlockedNow += 2;
 			printAchieveAchievement(2);
 		}
-		if(achieveNotHurt) {
-			achievementsUnlockedNow+=32;
+		if (achieveNotHurt) {
+			achievementsUnlockedNow += 32;
 			printAchieveAchievement(6);
 		}
-		if(result) {
-			timescore=(log(600)-log(time(NULL)-startTime))*500*(1+difficulty);
-			winGameScore=3000*(1+difficulty);
-		} else timescore=log(time(NULL)-startTime)*500*(1+difficulty);
-		beatKillerScore=(NUM_KILLERS-killersAlive)*1000*(1+difficulty);
-		specialScore*=100*(1+difficulty);
-		gameOver*=10*(1+difficulty);
-		_sleep(1000);
+		if (result) {
+			timescore = (log(600) - log(time(NULL) - startTime)) * 500 * (1 + difficulty);
+			winGameScore = 3000 * (1 + difficulty);
+		}
+		else timescore = log(time(NULL) - startTime) * 500 * (1 + difficulty);
+		beatKillerScore = (NUM_KILLERS - killersAlive) * 1000 * (1 + difficulty);
+		specialScore *= 100 * (1 + difficulty);
+		gameOver *= 10 * (1 + difficulty);
+		Sleep(1000);
 		system("cls");
-		if(gameOver<0)gameOver=0;
-		for(score=0; timescore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d                    \n ±º‰µ√∑÷£∫%d                         \nª˜∞‹…± ÷µ√∑÷£∫%d                     \nººƒ‹µ√∑÷£∫%d                      \n”Æµ√”Œœ∑µ√∑÷£∫%d                     \n—™¡øµ√∑÷£∫%d                    \n",
-			       score,timescore,beatKillerScore,specialScore,winGameScore,gameOver);
-			score+=50;
-			timescore-=50;
+		if (gameOver < 0)gameOver = 0;
+		for (score = 0; timescore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d                    \nÊó∂Èó¥ÂæóÂàÜÔºö%d                         \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö%d                     \nÊäÄËÉΩÂæóÂàÜÔºö%d                      \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d                     \nË°ÄÈáèÂæóÂàÜÔºö%d                    \n",
+				score, timescore, beatKillerScore, specialScore, winGameScore, gameOver);
+			score += 50;
+			timescore -= 50;
 		}
-		for(; timescore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫%d                     \nª˜∞‹…± ÷µ√∑÷£∫%d              \nººƒ‹µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,timescore,beatKillerScore,specialScore,winGameScore,gameOver);
-			score+=1;
-			timescore-=1;
+		for (; timescore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö%d                     \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö%d              \nÊäÄËÉΩÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, timescore, beatKillerScore, specialScore, winGameScore, gameOver);
+			score += 1;
+			timescore -= 1;
 		}
-		for(; beatKillerScore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                     \nª˜∞‹…± ÷µ√∑÷£∫%d              \nººƒ‹µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,beatKillerScore,specialScore,winGameScore,gameOver);
-			score+=50;
-			beatKillerScore-=50;
+		for (; beatKillerScore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                     \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö%d              \nÊäÄËÉΩÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, beatKillerScore, specialScore, winGameScore, gameOver);
+			score += 50;
+			beatKillerScore -= 50;
 		}
-		for(; beatKillerScore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                  \nª˜∞‹…± ÷µ√∑÷£∫%d              \nººƒ‹µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,beatKillerScore,specialScore,winGameScore,gameOver);
-			score+=1;
-			beatKillerScore-=1;
+		for (; beatKillerScore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                  \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö%d              \nÊäÄËÉΩÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, beatKillerScore, specialScore, winGameScore, gameOver);
+			score += 1;
+			beatKillerScore -= 1;
 		}
-		for(; specialScore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                 \nª˜∞‹…± ÷µ√∑÷£∫0              \nººƒ‹µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,specialScore,winGameScore,gameOver);
-			score+=50;
-			specialScore-=50;
+		for (; specialScore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                 \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö0              \nÊäÄËÉΩÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, specialScore, winGameScore, gameOver);
+			score += 50;
+			specialScore -= 50;
 		}
-		for(; specialScore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                   \nª˜∞‹…± ÷µ√∑÷£∫0              \nººƒ‹µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,specialScore,winGameScore,gameOver);
-			score+=1;
-			specialScore-=1;
+		for (; specialScore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                   \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö0              \nÊäÄËÉΩÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, specialScore, winGameScore, gameOver);
+			score += 1;
+			specialScore -= 1;
 		}
-		for(; winGameScore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                  \nª˜∞‹…± ÷µ√∑÷£∫0              \nººƒ‹µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,winGameScore,gameOver);
-			score+=50;
-			winGameScore-=50;
+		for (; winGameScore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                  \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö0              \nÊäÄËÉΩÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, winGameScore, gameOver);
+			score += 50;
+			winGameScore -= 50;
 		}
-		for(; winGameScore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0              \nª˜∞‹…± ÷µ√∑÷£∫0              \nººƒ‹µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,winGameScore,gameOver);
-			score+=0;
-			winGameScore-=0;
+		for (; winGameScore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0              \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö0              \nÊäÄËÉΩÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, winGameScore, gameOver);
+			score += 0;
+			winGameScore -= 0;
 		}
-		for(; gameOver>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0              \nª˜∞‹…± ÷µ√∑÷£∫0              \nººƒ‹µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫0              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,gameOver);
-			score+=50;
-			gameOver-=50;
+		for (; gameOver >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0              \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö0              \nÊäÄËÉΩÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö0              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, gameOver);
+			score += 50;
+			gameOver -= 50;
 		}
-		for(; gameOver>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0              \nª˜∞‹…± ÷µ√∑÷£∫0              \nººƒ‹µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫0              \n—™¡øµ√∑÷£∫%d              \n",
-			       score,gameOver);
-			score+=1;
-			gameOver-=1;
+		for (; gameOver > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0              \nÂáªË¥•ÊùÄÊâãÂæóÂàÜÔºö0              \nÊäÄËÉΩÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö0              \nË°ÄÈáèÂæóÂàÜÔºö%d              \n",
+				score, gameOver);
+			score += 1;
+			gameOver -= 1;
 		}
-		int scoremiddle=score,print;
-		fscanf(scoreboard,"%d%lld%d",&historyMaxScore,&totalScore,&level);
+		int scoremiddle = score, print;
+		fscanf(scoreboard, "%d%lld%d", &historyMaxScore, &totalScore, &level);
 		system("cls");
-		for(; scoremiddle>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			if(historyMaxScore<=score) {
-				printf("\n      –¬º«¬º£°\n");
+		for (; scoremiddle > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			if (historyMaxScore <= score) {
+				printf("\n      Êñ∞ËÆ∞ÂΩïÔºÅ\n");
 				system("color CF");
-				historyMaxScore=score;
+				historyMaxScore = score;
 			}
-			printf("ƒ„µƒµ»º∂£∫%d              \nƒ„µƒ±æ¥Œµ√∑÷£∫%d              \nƒ„µƒ◊Ó∏ﬂµ√∑÷º«¬º£∫%d              \n%lld/%lf:",
-			       level,score,historyMaxScore,totalScore,(long long)1000*pow(1.1,level));
-			print=int(10*totalScore/(1000*pow(1.1,level)));
-			while(print>0) {
-				printf("°ˆ");
+			printf("‰Ω†ÁöÑÁ≠âÁ∫ßÔºö%d              \n‰Ω†ÁöÑÊú¨Ê¨°ÂæóÂàÜÔºö%d              \n‰Ω†ÁöÑÊúÄÈ´òÂæóÂàÜËÆ∞ÂΩïÔºö%d              \n%lld/%lld:",
+				level, score, historyMaxScore, totalScore, (long long)(1000 * pow(1.1, level)));
+			print = int(10 * totalScore / (1000 * pow(1.1, level)));
+			while (print > 0) {
+				printf("‚ñ†");
 				print--;
 			}
 			printf("                  ");
-			if(scoremiddle>=500) {
-				totalScore+=500;
-				scoremiddle-=500;
-			} else if(scoremiddle>=50) {
-				totalScore+=50;
-				scoremiddle-=50;
-			} else totalScore+=1;
-			scoremiddle-=1;
-			if(totalScore>=(long long)1000*pow(1.1,level)) {
-				totalScore-=(long long)1000*pow(1.1,level);
+			if (scoremiddle >= 500) {
+				totalScore += 500;
+				scoremiddle -= 500;
+			}
+			else if (scoremiddle >= 50) {
+				totalScore += 50;
+				scoremiddle -= 50;
+			}
+			else totalScore += 1;
+			scoremiddle -= 1;
+			if (totalScore >= (long long)1000 * pow(1.1, level)) {
+				totalScore -= (long long)1000 * pow(1.1, level);
 				level++;
 			}
 		}
 		fclose(achievement);
 		fclose(scoreboard);
-		achievement=fopen("suvirorAchievement","w+");
-		scoreboard=fopen("suvirorScoreboard","w+");
-		fprintf(scoreboard,"%d %lld %d",historyMaxScore,totalScore,level);
-		fprintf(achievement,"%lld",achievementsUnlockedNow);
+		achievement = fopen("suvirorAchievement", "w+");
+		scoreboard = fopen("suvirorScoreboard", "w+");
+		fprintf(scoreboard, "%d %lld %d", historyMaxScore, totalScore, level);
+		fprintf(achievement, "%lld", achievementsUnlockedNow);
 		printf("\n               \n");
 		system("pause");
 	}
@@ -1600,1092 +1704,1137 @@ ct:
 namespace offlineKiller {
 
 	void setTrap() {
-		int j,p;
-		for(int i=0; i<=NUM_KILLERS+3; i++) {
+		int j, p;
+		for (int i = 0; i <= MAX_TRAP(difficulty); i++) {
 			do {
-				trapPosZ[i]=1+abs(rand()*time(NULL))%Floor;
-				p=0;
+				trapPosZ[i] = 1 + abs(rand() * time(NULL)) % Floor;
+				p = 0;
 				do {
-					trapPosX[i]=1+abs(rand()*time(NULL))%20;
-					j=0;
+					trapPosX[i] = 1 + abs(rand() * time(NULL)) % 20;
+					j = 0;
 					do {
-						trapPosY[i]=1+abs(rand()*time(NULL))%20;
+						trapPosY[i] = 1 + abs(rand() * time(NULL)) % 20;
 						j++;
-					} while(j<4&&(mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==1
-					              ||mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==-1
-					              ||isAnotherKillerHere(trapPosX[i],trapPosY[i],trapPosZ[i],-1)
-					              ||isPlayerAround(playerPosX,playerPosY,playerPosZ,trapPosX[i],trapPosY[i],
-					                               trapPosZ[i])||isAnotherTrapHere(trapPosX[i],trapPosY[i],trapPosZ[i],i)));
-				} while(p<4&&(mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==1
-				              ||mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==-1
-				              ||isAnotherKillerHere(trapPosX[i],trapPosY[i],trapPosZ[i],-1)
-				              ||isPlayerAround(playerPosX,playerPosY,playerPosZ,trapPosX[i],trapPosY[i],
-				                               trapPosZ[i])||isAnotherTrapHere(trapPosX[i],trapPosY[i],trapPosZ[i],i)));
-			} while(mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==1
-			        ||mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]]==-1
-			        ||isAnotherKillerHere(trapPosX[i],trapPosY[i],trapPosZ[i],-1)
-			        ||isPlayerAround(playerPosX,playerPosY,playerPosZ,trapPosX[i],trapPosY[i],
-			                         trapPosZ[i])||isAnotherTrapHere(trapPosX[i],trapPosY[i],trapPosZ[i],i));
+					} while (j < 4 && (mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == 1
+						|| mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == -1
+						|| isAnotherKillerHere(trapPosX[i], trapPosY[i], trapPosZ[i], -1)
+						|| isPlayerAround(playerPosX, playerPosY, playerPosZ, trapPosX[i], trapPosY[i],
+							trapPosZ[i]) || isAnotherTrapHere(trapPosX[i], trapPosY[i], trapPosZ[i], i)));
+				} while (p < 4 && (mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == 1
+					|| mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == -1
+					|| isAnotherKillerHere(trapPosX[i], trapPosY[i], trapPosZ[i], -1)
+					|| isPlayerAround(playerPosX, playerPosY, playerPosZ, trapPosX[i], trapPosY[i],
+						trapPosZ[i]) || isAnotherTrapHere(trapPosX[i], trapPosY[i], trapPosZ[i], i)));
+			} while (mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == 1
+				|| mapG[trapPosX[i]][trapPosY[i]][trapPosZ[i]] == -1
+				|| isAnotherKillerHere(trapPosX[i], trapPosY[i], trapPosZ[i], -1)
+				|| isPlayerAround(playerPosX, playerPosY, playerPosZ, trapPosX[i], trapPosY[i],
+					trapPosZ[i]) || isAnotherTrapHere(trapPosX[i], trapPosY[i], trapPosZ[i], i));
 		}
 	}
 
 
 	void showDifficulties() {
 		system("cls");
-		printf("∞¥\"A\"∫Õ\"D\"«–ªªƒ—∂»,∞¥Enterº¸»∑»œ\n");
-		switch(difficulty) {
-			case -2:
-				system("color 5D");
-				printf("µ˜ ‘ƒ£ Ω\n");
-				printf("…± ÷ ˝£∫2");
-				break;
-			case -1:
-				system("color 5D");
-				printf("ΩÃ≥Ãƒ£ Ω\n");
-				break;
-			case 0:
-				system("color 2A");
-				printf("ºÚµ•ƒ£ Ω\n");
-				printf("…± ÷ ˝£∫15");
-				break;
-			case 1:
-				system("color 6E");
-				printf("÷–µ»ƒ£ Ω\n");
-				printf("…± ÷ ˝£∫10");
-				break;
-			case 2:
-				system("color C4");
-				printf("¿ßƒ—ƒ£ Ω\n");
-				printf("…± ÷ ˝£∫5");
-				break;
-			case 3:
-				system("color 08");
-				printf("µÿ”¸ƒ£ Ω\n");
-				printf("…± ÷ ˝£∫2");
+		printf("Êåâ\"A\"Âíå\"D\"ÂàáÊç¢ÈöæÂ∫¶,ÊåâEnterÈîÆÁ°ÆËÆ§\n");
+		switch (difficulty) {
+		case -2:
+			system("color 5D");
+			printf("Ë∞ÉËØïÊ®°Âºè\n");
+			printf("ÊùÄÊâãÊï∞Ôºö2");
+			break;
+		case -1:
+			system("color 5D");
+			printf("ÊïôÁ®ãÊ®°Âºè\n");
+			break;
+		case 0:
+			system("color 2A");
+			printf("ÁÆÄÂçïÊ®°Âºè\n");
+			printf("ÊùÄÊâãÊï∞Ôºö15");
+			break;
+		case 1:
+			system("color 6E");
+			printf("‰∏≠Á≠âÊ®°Âºè\n");
+			printf("ÊùÄÊâãÊï∞Ôºö10");
+			break;
+		case 2:
+			system("color C4");
+			printf("Âõ∞ÈöæÊ®°Âºè\n");
+			printf("ÊùÄÊâãÊï∞Ôºö5");
+			break;
+		case 3:
+			system("color 08");
+			printf("Âú∞Áã±Ê®°Âºè\n");
+			printf("ÊùÄÊâãÊï∞Ôºö2");
 		}
-		if(difficulty>=(level/10)+1)printf("\n    µ»º∂≤ª◊„£°%dº∂Ω‚À¯:ƒ˙œ÷‘⁄Œ™%dº∂°£",
-			                                   difficulty*10,level);
+		if (difficulty >= (level / 10) + 1)printf("\n    Á≠âÁ∫ß‰∏çË∂≥ÔºÅ%dÁ∫ßËß£ÈîÅ:ÊÇ®Áé∞Âú®‰∏∫%dÁ∫ß„ÄÇ",
+			difficulty * 10, level);
 	}
 
 	bool chooseDifficulties() {
-		difficulty=-1;
-		while(true) {
+		difficulty = -1;
+		while (true) {
 			showDifficulties();
-			while(!(KEY_DOWN(VK_ESCAPE)||KEY_DOWN('A')||KEY_DOWN('D')||KEY_DOWN(VK_RETURN)||KEY_DOWN(VK_LEFT)
-			        ||KEY_DOWN(VK_RIGHT)||KEY_DOWN('F')))_sleep(10);
-			if(KEY_DOWN(VK_ESCAPE))return false;
-			if(KEY_DOWN(VK_RETURN)||KEY_DOWN('F'))
-				if((difficulty<(level/10)+1)||(difficulty>-2&&debugEnable)) {
+			while (!(KEY_DOWN(VK_ESCAPE) || KEY_DOWN('A') || KEY_DOWN('D') || KEY_DOWN(VK_RETURN) || KEY_DOWN(VK_LEFT)
+				|| KEY_DOWN(VK_RIGHT) || KEY_DOWN('F')))Sleep(10);
+			if (KEY_DOWN(VK_ESCAPE))return false;
+			if (KEY_DOWN(VK_RETURN) || KEY_DOWN('F'))
+				if ((difficulty < (level / 10) + 1) || (difficulty > -2 && debugEnable)) {
 					system("color F0");
 					return true;
 				}
-			if(KEY_DOWN(VK_LEFT)||KEY_DOWN('A'))if(difficulty>-1||(difficulty>-2
-				                                       &&debugEnable))difficulty--;
-			if(KEY_DOWN(VK_RIGHT)
-			        ||KEY_DOWN('D'))if(difficulty<NUM_MAXDIFFICULTY)difficulty++;
-			_sleep(150);
+			if (KEY_DOWN(VK_LEFT) || KEY_DOWN('A'))if (difficulty > -1 || (difficulty > -2
+				&& debugEnable))difficulty--;
+			if (KEY_DOWN(VK_RIGHT)
+				|| KEY_DOWN('D'))if (difficulty < NUM_MAXDIFFICULTY)difficulty++;
+			Sleep(150);
 		}
 	}
 
-	bool readMap() {
-		int i=0;
-		mapID='1'+abs(rand()*time(NULL))%9;
-		i++;
-		mapNames="map";
-		mapNames+=char(mapID);
-		mapNames+=".map";
-		maper=fopen(mapNames.c_str(),"r");
-		while(!maper||i<20){
-			fclose(maper); 
-			mapID='1'+abs(rand()*time(NULL))%9;
-			i++;
-			mapNames="map";
-			mapNames+=char(mapID);
-			mapNames+=".map";
-			maper=fopen(mapNames.c_str(),"r");
-		} 
-		Floor=0;
+	bool readMap(FILE* maper) {
+		if (maper == 0)return false;
+		Floor = 0;
 		int tmp;
-		memset(mapG,-1,sizeof(mapG));
-		while(fscanf(maper,"F%d",&tmp)!=EOF) {
-			Floor=tmp;
-			for(int i=1; i<21; i++) {
-				for(int j=1; j<21; j++) {
-					fscanf(maper,"%d",&mapG[i][j][Floor]);
-					if(mapG[i][j][Floor]>=10)
+		memset(mapG, -1, sizeof(mapG));
+		while (fscanf(maper, "F%d", &tmp) != EOF) {
+			Floor = tmp;
+			for (int i = 1; i < 21; i++) {
+				for (int j = 1; j < 21; j++) {
+					fscanf(maper, "%d", &mapG[i][j][Floor]);
+					if (mapG[i][j][Floor] >= 10)
 						return false;
 				}
 			}
 		}
 		fclose(maper);
-		if(Floor>=1&&Floor<=8)return true;
+		if (Floor >= 1 && Floor <= 8)return true;
 		return false;
 	}
 
-	bool inMap(int X,int Y) {
-		if(0<X&&X<22&&0<Y&&Y<22)return true;
+	bool inMap(int X, int Y) {
+		if (0 < X && X < 22 && 0 < Y && Y < 22)return true;
 		return false;
 	}
 
-	void setStep(int posX,int posY,int layer,int stepNum) {
-		if((!inMap(posX,posY))||layer<1||layer>Floor)return;
-		if(resetedStep[posX][posY][layer]&&stepNum>=steps[posX][posY][layer])return;
-		steps[posX][posY][layer]=stepNum;
-		resetedStep[posX][posY][layer]=true;
-		if(mapG[posX][posY][layer]==1||mapG[posX][posY][layer]==-1)stepNum+=500;
-		if(isAnotherTrapHere(posX,posY,layer,-1)) {
-			if(killersAlive<difficulty+2)
-				stepNum+=300+difficulty*50;
-			else if(steps[posX][posY][layer]>20-difficulty*5)
-				stepNum+=50+difficulty*20;
+	void setStep(int posX, int posY, int layer, int stepNum) {
+		if ((!inMap(posX, posY)) || layer<1 || layer>Floor)return;
+		if (resetedStep[posX][posY][layer] && stepNum >= stepsUpdate[posX][posY][layer])return;
+		stepsUpdate[posX][posY][layer] = stepNum;
+		resetedStep[posX][posY][layer] = true;
+		if (mapG[posX][posY][layer] == 1 || mapG[posX][posY][layer] == -1)
+			stepNum += WALL_WEIGHT(difficulty);
+		if (isAnotherTrapHere(posX, posY, layer, -1)) {
+			if (killersAlive < POST_REMAIN(Difficulty))
+				stepNum += TRAP_WEIGHT_POST(Difficulty);
+			else if (steps[posX][posY][layer] > TRAP_FAR_DIST(Difficulty))
+				stepNum += TRAP_WEIGHT_PRE_FAR(Difficulty);
 			else
-				stepNum+=90+difficulty*30;
+				stepNum += TRAP_WEIGHT_PRE_CLOSE(Difficulty);
 		}
-		if(isKillerHere(posX,posY,layer))stepNum+=100+difficulty*15;
-		setStep(posX+1,posY,layer,stepNum+1);
-		setStep(posX-1,posY,layer,stepNum+1);
-		setStep(posX,posY+1,layer,stepNum+1);
-		setStep(posX,posY-1,layer,stepNum+1);
-		for(int l=1; l<=Floor; l++)
-			if(mapG[posX][posY][l]==10-layer) {
-				setStep(posX+1,posY,layer,steps[posX][posY][l]+6);
-				setStep(posX-1,posY,layer,steps[posX][posY][l]+6);
-				setStep(posX,posY+1,layer,steps[posX][posY][l]+6);
-				setStep(posX,posY-1,layer,steps[posX][posY][l]+6);
+		if (isKillerHere(posX, posY, layer))
+			stepNum += KILLER_WEIGHT(Difficulty);
+		setStep(posX + 1, posY, layer, stepNum + 1);
+		setStep(posX - 1, posY, layer, stepNum + 1);
+		setStep(posX, posY + 1, layer, stepNum + 1);
+		setStep(posX, posY - 1, layer, stepNum + 1);
+		for (int l = 1; l <= Floor; l++)
+			if (mapG[posX][posY][l] == 10 - layer) {
+				setStep(posX, posY, l, stepNum + FLOOR_WEIGHT(Difficulty));
+				setStep(posX + 1, posY, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
+				setStep(posX - 1, posY, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
+				setStep(posX, posY + 1, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
+				setStep(posX, posY - 1, l, stepNum + FLOOR_WEIGHT(Difficulty) + 1);
 			}
 	}
 
-	void setSurvirorStep(int posX,int posY,int layer,int stepNum) {
-		if(posX<0||posY<0||layer<0)return;
-		if((!inMap(posX,posY))||layer<1||layer>Floor)return;
-		if(resetedSurvirorStep[posX][posY][layer]&&stepNum>=stepSurviror[posX][posY][layer])return;
-		stepSurviror[posX][posY][layer]=stepNum;
-		resetedSurvirorStep[posX][posY][layer]=true;
-		if(mapG[posX][posY][layer]==1||mapG[posX][posY][layer]==-1)stepNum+=500;
-		if(isAnotherTrapHere(posX,posY,layer,-1)) {
-			stepNum-=50;
+	void setSurvirorStep(int posX, int posY, int layer, int stepNum) {
+		if (posX < 0 || posY < 0 || layer < 0)return;
+		if ((!inMap(posX, posY)) || layer<1 || layer>Floor)return;
+		if (resetedSurvirorStep[posX][posY][layer] && stepNum >= stepSurviror[posX][posY][layer])return;
+		stepSurviror[posX][posY][layer] = stepNum;
+		resetedSurvirorStep[posX][posY][layer] = true;
+		if (mapG[posX][posY][layer] == 1 || mapG[posX][posY][layer] == -1)stepNum += 500;
+		if (isAnotherTrapHere(posX, posY, layer, -1)) {
+			stepNum -= 50;
 		}
-		if(isKillerHere(posX,posY,layer))stepNum+=100+difficulty*15;
-		setSurvirorStep(posX+1,posY,layer,stepNum+51);
-		setSurvirorStep(posX-1,posY,layer,stepNum+51);
-		setSurvirorStep(posX,posY+1,layer,stepNum+51);
-		setSurvirorStep(posX,posY-1,layer,stepNum+51);
-		for(int l=1; l<=Floor; l++)
-			if(mapG[posX][posY][l]==10-layer) {
-				setSurvirorStep(posX+1,posY,layer,stepSurviror[posX][posY][l]+110);
-				setSurvirorStep(posX-1,posY,layer,stepSurviror[posX][posY][l]+110);
-				setSurvirorStep(posX,posY+1,layer,stepSurviror[posX][posY][l]+110);
-				setSurvirorStep(posX,posY-1,layer,stepSurviror[posX][posY][l]+110);
+		if (isKillerHere(posX, posY, layer))stepNum += 100 + difficulty * 15;
+		setSurvirorStep(posX + 1, posY, layer, stepNum + 51);
+		setSurvirorStep(posX - 1, posY, layer, stepNum + 51);
+		setSurvirorStep(posX, posY + 1, layer, stepNum + 51);
+		setSurvirorStep(posX, posY - 1, layer, stepNum + 51);
+		for (int l = 1; l <= Floor; l++)
+			if (mapG[posX][posY][l] == 10 - layer) {
+				setSurvirorStep(posX + 1, posY, layer, stepSurviror[posX][posY][l] + 110);
+				setSurvirorStep(posX - 1, posY, layer, stepSurviror[posX][posY][l] + 110);
+				setSurvirorStep(posX, posY + 1, layer, stepSurviror[posX][posY][l] + 110);
+				setSurvirorStep(posX, posY - 1, layer, stepSurviror[posX][posY][l] + 110);
 			}
 	}
 
-	void* resetStepThread(void * vpr) {
-		memset(resetedStep,false,sizeof(resetedStep));
-		while(gameOver>0&&killersAlive>0) {
-			memset(resetedStep,false,sizeof(resetedStep));
-			setStep(playerPosX,playerPosY,playerPosZ,0);
-			_sleep(200);
+	void resetStepThread() {
+		while (gameOver > 0 && killersAlive > 0) {
+			memset(resetedStep, false, sizeof(resetedStep));
+			setStep(playerPosX, playerPosY, playerPosZ, 0);
+			memcpy(steps, stepsUpdate, sizeof(stepsUpdate));
+			Sleep(200);
 		}
-		return voidptr;
+		return;
 	}
 
-	void* resetSurvirorStepThread(void * vpr) {
-		memset(resetedSurvirorStep,false,sizeof(resetedSurvirorStep));
-		while(gameOver>0&&killersAlive>0) {
-			memset(resetedSurvirorStep,false,sizeof(resetedSurvirorStep));
-			for(int i=0; i<NUM_KILLERS+3; i++)
-				if(alive[i])
-					setSurvirorStep(trapPosX[i],trapPosY[i],trapPosZ[i],0);
-			_sleep(200);
+	void resetSurvirorStepThread() {
+		memset(resetedSurvirorStep, false, sizeof(resetedSurvirorStep));
+		while (gameOver > 0 && killersAlive > 0) {
+			memset(resetedSurvirorStep, false, sizeof(resetedSurvirorStep));
+			for (int i = 0; i < NUM_KILLERS + 3; i++)
+				if (alive[i])
+					setSurvirorStep(trapPosX[i], trapPosY[i], trapPosZ[i], 0);
+			Sleep(200);
 		}
-		return voidptr;
+		return;
 	}
 
 	void lookAtMap() {
-		if(historyX!=playerPosX||historyY!=playerPosY||historyZ!=playerPosZ) {
-			historyX=playerPosX;
-			historyY=playerPosY;
-			historyZ=playerPosZ;
-			for(int x=-21; x<21; x++) {
-				for(int y=-21; y<21; y++) {
-					if(difficulty<=2) {
-						if(x*x+y*y<=NUM_VIEWMAXRADIUS*NUM_VIEWMAXRADIUS)
-							watchable[x+22][y+22]=true;
-						else watchable[x+22][y+22]=false;
-					} else if(x*x+y*y<=NUM_VIEWMINRADIUS*NUM_VIEWMINRADIUS) {
-						watchable[x+22][y+22]=true;
-					} else if(mapG[x+playerPosX][y+playerPosY][playerPosZ]
-					          &&x*x+y*y<=NUM_VIEWMAXRADIUS*NUM_VIEWMAXRADIUS) {
-						if(steps[x+playerPosX][y+playerPosY][playerPosZ]==abs(x)+abs(y))
-							switch(direction) {
-								case 0://-10<i<0,-10<j<10,PosY=(j/i)*x+playerPosY(i<x<0)
-									if(y-playerPosY>=x-playerPosX&&y-playerPosY<=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
-								case 1://-10<i<10,-10<j<0,PosX=(i/j)*y+playerPosX(j<y<0)
-									if(y-playerPosY<=x-playerPosX&&y-playerPosY<=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
-								case 2://0<i<10,-10<j<10,PosY=(j/i)*x+playerPosY(0<x<i)
-									if(y-playerPosY<=x-playerPosX&&y-playerPosY>=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
-								case 3:
-									if(y-playerPosY>=x-playerPosX&&y-playerPosY>=-x+playerPosX)
-										watchable[x+22][y+22]=true;
-									break;
+		if (historyX != playerPosX || historyY != playerPosY || historyZ != playerPosZ) {
+			historyX = playerPosX;
+			historyY = playerPosY;
+			historyZ = playerPosZ;
+			for (int x = -21; x < 21; x++) {
+				for (int y = -21; y < 21; y++) {
+					if (difficulty <= 2) {
+						if (x * x + y * y <= NUM_VIEWMAXRADIUS * NUM_VIEWMAXRADIUS)
+							watchable[x + 22][y + 22] = true;
+						else watchable[x + 22][y + 22] = false;
+					}
+					else if (x * x + y * y <= NUM_VIEWMINRADIUS * NUM_VIEWMINRADIUS) {
+						watchable[x + 22][y + 22] = true;
+					}
+					else if (mapG[x + playerPosX][y + playerPosY][playerPosZ]
+						&& x * x + y * y <= NUM_VIEWMAXRADIUS * NUM_VIEWMAXRADIUS) {
+						if (steps[x + playerPosX][y + playerPosY][playerPosZ] == abs(x) + abs(y))
+							switch (direction) {
+							case 0://-10<i<0,-10<j<10,PosY=(j/i)*x+playerPosY(i<x<0)
+								if (y - playerPosY >= x - playerPosX && y - playerPosY <= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
+							case 1://-10<i<10,-10<j<0,PosX=(i/j)*y+playerPosX(j<y<0)
+								if (y - playerPosY <= x - playerPosX && y - playerPosY <= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
+							case 2://0<i<10,-10<j<10,PosY=(j/i)*x+playerPosY(0<x<i)
+								if (y - playerPosY <= x - playerPosX && y - playerPosY >= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
+							case 3:
+								if (y - playerPosY >= x - playerPosX && y - playerPosY >= -x + playerPosX)
+									watchable[x + 22][y + 22] = true;
+								break;
 							}
-						else watchable[x+22][y+22]=false;
-					} else watchable[x+22][y+22]=false;
+						else watchable[x + 22][y + 22] = false;
+					}
+					else watchable[x + 22][y + 22] = false;
 				}
 			}
 		}
 	}
 
 	int survirorChooseWhereToGo() {
-		int Steps[4]= {	stepSurviror[playerPosX-1][playerPosY][playerPosZ],
-		                stepSurviror[playerPosX][playerPosY-1][playerPosZ],
-		                stepSurviror[playerPosX+1][playerPosY][playerPosZ],
-		                stepSurviror[playerPosX][playerPosY+1][playerPosZ]
-		              };
-		int maps[4]= {	mapG[playerPosX-1][playerPosY][playerPosZ],
-		                mapG[playerPosX][playerPosY-1][playerPosZ],
-		                mapG[playerPosX+1][playerPosY][playerPosZ],
-		                mapG[playerPosX][playerPosY+1][playerPosZ]
-		             };
-		int maxDirection=-1,maxChoice=INT_MIN,i;
-		for(i=0; i<4; i++)
-			if(Steps[i]>maxChoice&&maps[i]!=-1&&maps[i]!=1) {
-				maxChoice=Steps[i];
-				maxDirection=i;
+		int Steps[4] = { stepSurviror[playerPosX - 1][playerPosY][playerPosZ],
+						stepSurviror[playerPosX][playerPosY - 1][playerPosZ],
+						stepSurviror[playerPosX + 1][playerPosY][playerPosZ],
+						stepSurviror[playerPosX][playerPosY + 1][playerPosZ]
+		};
+		int maps[4] = { mapG[playerPosX - 1][playerPosY][playerPosZ],
+						mapG[playerPosX][playerPosY - 1][playerPosZ],
+						mapG[playerPosX + 1][playerPosY][playerPosZ],
+						mapG[playerPosX][playerPosY + 1][playerPosZ]
+		};
+		int maxDirection = -1, maxChoice = INT_MIN, i;
+		for (i = 0; i < 4; i++)
+			if (Steps[i] > maxChoice && maps[i] != -1 && maps[i] != 1) {
+				maxChoice = Steps[i];
+				maxDirection = i;
 			}
 		return maxDirection;
 	}
 
-	void* surviror(void* vpr) {
-		bool usedPerk=false;
-		while(gameOver>0&&killersAlive>0) {
-			while(mapG[playerPosX][playerPosY][playerPosZ]!=0||isAnotherTrapHere(playerPosX,playerPosY,playerPosZ,-1)){
-				playerPosX=10+rand()%10-rand()%10;
-				playerPosY=10+rand()%10-rand()%10;
+	void surviror() {
+		bool usedPerk = false;
+		while (gameOver > 0 && killersAlive > 0) {
+			while (mapG[playerPosX][playerPosY][playerPosZ] != 0 || isAnotherTrapHere(playerPosX, playerPosY, playerPosZ, -1)) {
+				playerPosX = 10 + rand() % 10 - rand() % 10;
+				playerPosY = 10 + rand() % 10 - rand() % 10;
 			}
-			gameOver-=bloodkill;
-			if(playerPosX<=0)playerPosX=1;
-			if(playerPosY<=0)playerPosY=1;
-			if(playerType==4&&special>0) {
-				_sleep(150);
+			gameOver -= bloodkill;
+			if (playerPosX <= 0)playerPosX = 1;
+			if (playerPosY <= 0)playerPosY = 1;
+			if (playerType == 4 && special > 0) {
+				Sleep(150);
 				special--;
-				if(special==0)special=-60-difficulty*10;
-			} else _sleep(500);
-			if(!usedPerk)
-				switch(survirorChooseWhereToGo()) {
-					case 0: {
-						direction=0;
-						if(mapG[playerPosX-1][playerPosY][playerPosZ]!=1
-						        &&mapG[playerPosX-1][playerPosY][playerPosZ]!=-1)
-							playerPosX--;
-						break;
-					}
-					case 1: {
-						direction=1;
-						if(mapG[playerPosX][playerPosY-1][playerPosZ]!=1
-						        &&mapG[playerPosX][playerPosY-1][playerPosZ]!=-1)
-							playerPosY--;
-						break;
-					}
-					case 2: {
-						direction=2;
-						if(mapG[playerPosX+1][playerPosY][playerPosZ]!=1
-						        &&mapG[playerPosX+1][playerPosY][playerPosZ]!=-1)
-							playerPosX++;
-						break;
-					}
-					case 3: {
-						direction=3;
-						if(mapG[playerPosX][playerPosY+1][playerPosZ]!=1
-						        &&mapG[playerPosX][playerPosY+1][playerPosZ]!=-1)
-							playerPosY++;
-					}
+				if (special == 0)special = -60 - difficulty * 10;
+			}
+			else Sleep(500);
+			if (!usedPerk)
+				switch (survirorChooseWhereToGo()) {
+				case 0: {
+					direction = 0;
+					if (mapG[playerPosX - 1][playerPosY][playerPosZ] != 1
+						&& mapG[playerPosX - 1][playerPosY][playerPosZ] != -1)
+						playerPosX--;
+					break;
 				}
-			usedPerk=false;
-			switch(playerType) {
+				case 1: {
+					direction = 1;
+					if (mapG[playerPosX][playerPosY - 1][playerPosZ] != 1
+						&& mapG[playerPosX][playerPosY - 1][playerPosZ] != -1)
+						playerPosY--;
+					break;
+				}
+				case 2: {
+					direction = 2;
+					if (mapG[playerPosX + 1][playerPosY][playerPosZ] != 1
+						&& mapG[playerPosX + 1][playerPosY][playerPosZ] != -1)
+						playerPosX++;
+					break;
+				}
+				case 3: {
+					direction = 3;
+					if (mapG[playerPosX][playerPosY + 1][playerPosZ] != 1
+						&& mapG[playerPosX][playerPosY + 1][playerPosZ] != -1)
+						playerPosY++;
+				}
+				}
+			usedPerk = false;
+			switch (playerType) {
+			case 0:
+				break;
+			case 1:
+				switch (direction) {
 				case 0:
+					if (mapG[playerPosX - 1][playerPosY][playerPosZ] == 1) {
+						usedPerk = true;
+						mapG[playerPosX - 1][playerPosY][playerPosZ] = 0;
+						special++;
+						specialScore++;
+						break;
+					}
+					if (mapG[playerPosX - 1][playerPosY][playerPosZ] == 0 && special && isAnotherKillerHere(playerPosX - 1, playerPosY, playerPosZ, -1)) {
+						usedPerk = true;
+						mapG[playerPosX - 1][playerPosY][playerPosZ] = 1;
+						special--;
+						specialScore++;
+						break;
+					}
 					break;
 				case 1:
-					switch(direction) {
-						case 0:
-							if(mapG[playerPosX-1][playerPosY][playerPosZ]==1) {
-								usedPerk=true;
-								mapG[playerPosX-1][playerPosY][playerPosZ]=0;
-								special++;
-								specialScore++;
-								break;
-							}
-							if(mapG[playerPosX-1][playerPosY][playerPosZ]==0&&special&&isAnotherKillerHere(playerPosX-1,playerPosY,playerPosZ,-1)) {
-								usedPerk=true;
-								mapG[playerPosX-1][playerPosY][playerPosZ]=1;
-								special--;
-								specialScore++;
-								break;
-							}
-							break;
-						case 1:
-							if(mapG[playerPosX][playerPosY-1][playerPosZ]==1) {
-								usedPerk=true;
-								mapG[playerPosX][playerPosY-1][playerPosZ]=0;
-								special++;
-								specialScore++;
-								break;
-							}
-							if(mapG[playerPosX][playerPosY-1][playerPosZ]==0&&special&&isAnotherKillerHere(playerPosX,playerPosY-1,playerPosZ,-1)) {
-								usedPerk=true;
-								mapG[playerPosX][playerPosY-1][playerPosZ]=1;
-								special--;
-								specialScore++;
-								break;
-							}
-							break;
-						case 2:
-							if(mapG[playerPosX+1][playerPosY][playerPosZ]==1) {
-								usedPerk=true;
-								mapG[playerPosX+1][playerPosY][playerPosZ]=0;
-								special++;
-								specialScore++;
-								break;
-							}
-							if(mapG[playerPosX+1][playerPosY][playerPosZ]==0&&special&&isAnotherKillerHere(playerPosX+1,playerPosY,playerPosZ,-1)) {
-								usedPerk=true;
-								mapG[playerPosX+1][playerPosY][playerPosZ]=1;
-								special--;
-								specialScore++;
-								break;
-							}
-							break;
-						case 3:
-							if(mapG[playerPosX][playerPosY+1][playerPosZ]==1) {
-								usedPerk=true;
-								mapG[playerPosX][playerPosY+1][playerPosZ]=0;
-								special++;
-								specialScore++;
-								break;
-							}
-							if(mapG[playerPosX][playerPosY+1][playerPosZ]==0&&special&&isAnotherKillerHere(playerPosX+1,playerPosY,playerPosZ,-1)) {
-								usedPerk=true;
-								mapG[playerPosX][playerPosY+1][playerPosZ]=1;
-								special--;
-								specialScore++;
-								break;
-							}
-							break;
+					if (mapG[playerPosX][playerPosY - 1][playerPosZ] == 1) {
+						usedPerk = true;
+						mapG[playerPosX][playerPosY - 1][playerPosZ] = 0;
+						special++;
+						specialScore++;
+						break;
+					}
+					if (mapG[playerPosX][playerPosY - 1][playerPosZ] == 0 && special && isAnotherKillerHere(playerPosX, playerPosY - 1, playerPosZ, -1)) {
+						usedPerk = true;
+						mapG[playerPosX][playerPosY - 1][playerPosZ] = 1;
+						special--;
+						specialScore++;
+						break;
 					}
 					break;
-				case 2: {
-					if(gameOver<500+100*difficulty) {
-						usedPerk=true;
-						specialScore+=10;
-						special+=30+difficulty*10;
-						if(special>=100) {
-							gameOver+=(special/100)*100;
-							special%=100;
-						}
+				case 2:
+					if (mapG[playerPosX + 1][playerPosY][playerPosZ] == 1) {
+						usedPerk = true;
+						mapG[playerPosX + 1][playerPosY][playerPosZ] = 0;
+						special++;
+						specialScore++;
+						break;
+					}
+					if (mapG[playerPosX + 1][playerPosY][playerPosZ] == 0 && special && isAnotherKillerHere(playerPosX + 1, playerPosY, playerPosZ, -1)) {
+						usedPerk = true;
+						mapG[playerPosX + 1][playerPosY][playerPosZ] = 1;
+						special--;
+						specialScore++;
+						break;
+					}
+					break;
+				case 3:
+					if (mapG[playerPosX][playerPosY + 1][playerPosZ] == 1) {
+						usedPerk = true;
+						mapG[playerPosX][playerPosY + 1][playerPosZ] = 0;
+						special++;
+						specialScore++;
+						break;
+					}
+					if (mapG[playerPosX][playerPosY + 1][playerPosZ] == 0 && special && isAnotherKillerHere(playerPosX + 1, playerPosY, playerPosZ, -1)) {
+						usedPerk = true;
+						mapG[playerPosX][playerPosY + 1][playerPosZ] = 1;
+						special--;
+						specialScore++;
+						break;
 					}
 					break;
 				}
-				case 3:
-					if(special) {
-						switch(direction) {
-							case 0:
-								if(mapG[playerPosX-1][playerPosY][playerPosZ]==0
-								        &&!isAnotherTrapHere(playerPosX-1,playerPosY,playerPosZ,-1)) {
-									usedPerk=true;
-									trapPosX[2*NUM_KILLERS-special]=playerPosX-1;
-									trapPosY[2*NUM_KILLERS-special]=playerPosY;
-									trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-									special--;
-									specialScore++;
-								}
-								break;
-							case 1:
-								if(mapG[playerPosX][playerPosY-1][playerPosZ]==0
-								        &&!isAnotherTrapHere(playerPosX,playerPosY-1,playerPosZ,-1)) {
-									usedPerk=true;
-									trapPosX[2*NUM_KILLERS-special]=playerPosX;
-									trapPosY[2*NUM_KILLERS-special]=playerPosY-1;
-									trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-									special--;
-									specialScore++;
-								}
-								break;
-							case 2:
-								if(mapG[playerPosX+1][playerPosY][playerPosZ]==0
-								        &&!isAnotherTrapHere(playerPosX+1,playerPosY,playerPosZ,-1)) {
-									usedPerk=true;
-									trapPosX[2*NUM_KILLERS-special]=playerPosX+1;
-									trapPosY[2*NUM_KILLERS-special]=playerPosY;
-									trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-									special--;
-									specialScore++;
-								}
-								break;
-							case 3:
-								if(mapG[playerPosX][playerPosY+1][playerPosZ]==0
-								        &&!isAnotherTrapHere(playerPosX,playerPosY+1,playerPosZ,-1)) {
-									usedPerk=true;
-									trapPosX[2*NUM_KILLERS-special]=playerPosX;
-									trapPosY[2*NUM_KILLERS-special]=playerPosY+1;
-									trapPosZ[2*NUM_KILLERS-special]=playerPosZ;
-									special--;
-									specialScore++;
-								}
-								break;
+				break;
+			case 2: {
+				if (gameOver < 500 + 100 * difficulty) {
+					usedPerk = true;
+					specialScore += 10;
+					special += 30 + difficulty * 10;
+					if (special >= 100) {
+						gameOver += (special / 100) * 100;
+						special %= 100;
+					}
+				}
+				break;
+			}
+			case 3:
+				if (special) {
+					switch (direction) {
+					case 0:
+						if (mapG[playerPosX - 1][playerPosY][playerPosZ] == 0
+							&& !isAnotherTrapHere(playerPosX - 1, playerPosY, playerPosZ, -1)) {
+							usedPerk = true;
+							trapPosX[2 * NUM_KILLERS - special] = playerPosX - 1;
+							trapPosY[2 * NUM_KILLERS - special] = playerPosY;
+							trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+							special--;
+							specialScore++;
+						}
+						break;
+					case 1:
+						if (mapG[playerPosX][playerPosY - 1][playerPosZ] == 0
+							&& !isAnotherTrapHere(playerPosX, playerPosY - 1, playerPosZ, -1)) {
+							usedPerk = true;
+							trapPosX[2 * NUM_KILLERS - special] = playerPosX;
+							trapPosY[2 * NUM_KILLERS - special] = playerPosY - 1;
+							trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+							special--;
+							specialScore++;
+						}
+						break;
+					case 2:
+						if (mapG[playerPosX + 1][playerPosY][playerPosZ] == 0
+							&& !isAnotherTrapHere(playerPosX + 1, playerPosY, playerPosZ, -1)) {
+							usedPerk = true;
+							trapPosX[2 * NUM_KILLERS - special] = playerPosX + 1;
+							trapPosY[2 * NUM_KILLERS - special] = playerPosY;
+							trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+							special--;
+							specialScore++;
+						}
+						break;
+					case 3:
+						if (mapG[playerPosX][playerPosY + 1][playerPosZ] == 0
+							&& !isAnotherTrapHere(playerPosX, playerPosY + 1, playerPosZ, -1)) {
+							usedPerk = true;
+							trapPosX[2 * NUM_KILLERS - special] = playerPosX;
+							trapPosY[2 * NUM_KILLERS - special] = playerPosY + 1;
+							trapPosZ[2 * NUM_KILLERS - special] = playerPosZ;
+							special--;
+							specialScore++;
 						}
 						break;
 					}
-				case 4:
-					if(special!=0)break;
-					usedPerk=true;
-					special=30+difficulty*5;
-					specialScore+=10;
-					int i=5+difficulty;
-					switch(direction) {
-						case 0:
-							for(; playerPosX-i<=0||mapG[playerPosX-i][playerPosY][playerPosZ]==1
-							        ||mapG[playerPosX-i][playerPosY][playerPosZ]==-1; i--);
-							playerPosX-=i;
-							break;
-						case 1:
-							for(; playerPosY-i<=0||mapG[playerPosX][playerPosY-i][playerPosZ]==1
-							        ||mapG[playerPosX][playerPosY-i][playerPosZ]==-1; i--);
-							playerPosY-=i;
-							break;
-						case 2:
-							for(; playerPosX+i>=22||mapG[playerPosX+i][playerPosY][playerPosZ]==1
-							        ||mapG[playerPosX+i][playerPosY][playerPosZ]==-1; i--);
-							playerPosX+=i;
-							break;
-						case 3:
-							for(; playerPosY+i>=22||mapG[playerPosX][playerPosY+i][playerPosZ]==1
-							        ||mapG[playerPosX][playerPosY+i][playerPosZ]==-1; i--);
-							playerPosY+=i;
-							break;
-					}
-			}
-			if(KEY_DOWN(VK_RETURN))
-				if(difficulty==-1) {
-					killersAlive=0;
-					return voidptr;
-				}
-			switch(playerType) {
-				case 2:
-					if(special>=10)special-=10;
-					else special=0;
 					break;
+				}
+			case 4:
+				if (special != 0)break;
+				usedPerk = true;
+				special = 30 + difficulty * 5;
+				specialScore += 10;
+				int i = 5 + difficulty;
+				switch (direction) {
+				case 0:
+					for (; playerPosX - i <= 0 || mapG[playerPosX - i][playerPosY][playerPosZ] == 1
+						|| mapG[playerPosX - i][playerPosY][playerPosZ] == -1; i--);
+					playerPosX -= i;
+					break;
+				case 1:
+					for (; playerPosY - i <= 0 || mapG[playerPosX][playerPosY - i][playerPosZ] == 1
+						|| mapG[playerPosX][playerPosY - i][playerPosZ] == -1; i--);
+					playerPosY -= i;
+					break;
+				case 2:
+					for (; playerPosX + i >= 22 || mapG[playerPosX + i][playerPosY][playerPosZ] == 1
+						|| mapG[playerPosX + i][playerPosY][playerPosZ] == -1; i--);
+					playerPosX += i;
+					break;
+				case 3:
+					for (; playerPosY + i >= 22 || mapG[playerPosX][playerPosY + i][playerPosZ] == 1
+						|| mapG[playerPosX][playerPosY + i][playerPosZ] == -1; i--);
+					playerPosY += i;
+					break;
+				}
 			}
-			if(mapG[playerPosX][playerPosY][playerPosZ]>=2
-			        &&mapG[playerPosX][playerPosY][playerPosZ]<=9) {
-				playerPosZ=10-mapG[playerPosX][playerPosY][playerPosZ];
-				if(mapG[playerPosX][playerPosY][playerPosZ]>=2
-				        &&mapG[playerPosX][playerPosY][playerPosZ]<=9)
-					switch(direction) {
-						case 0:
-							playerPosX+=1;
-							direction=2;
-							break;
-						case 1:
-							playerPosY+=1;
-							direction=3;
-							break;
-						case 2:
-							playerPosX-=1;
-							direction=0;
-							break;
-						case 3:
-							playerPosY-=1;
-							direction=1;
-							break;
+			if (KEY_DOWN(VK_RETURN))
+				if (difficulty == -1) {
+					killersAlive = 0;
+					return;
+				}
+			switch (playerType) {
+			case 2:
+				if (special >= 10)special -= 10;
+				else special = 0;
+				break;
+			}
+			if (mapG[playerPosX][playerPosY][playerPosZ] >= 2
+				&& mapG[playerPosX][playerPosY][playerPosZ] <= 9) {
+				playerPosZ = 10 - mapG[playerPosX][playerPosY][playerPosZ];
+				if (mapG[playerPosX][playerPosY][playerPosZ] >= 2
+					&& mapG[playerPosX][playerPosY][playerPosZ] <= 9)
+					switch (direction) {
+					case 0:
+						playerPosX += 1;
+						direction = 2;
+						break;
+					case 1:
+						playerPosY += 1;
+						direction = 3;
+						break;
+					case 2:
+						playerPosX -= 1;
+						direction = 0;
+						break;
+					case 3:
+						playerPosY -= 1;
+						direction = 1;
+						break;
 					}
-				if(playerType==4&&special>0) {
-					_sleep(150);
+				if (playerType == 4 && special > 0) {
+					Sleep(150);
 					special--;
-					if(special==0)special=-60-difficulty*10;
-				} else _sleep(500);
+					if (special == 0)special = -60 - difficulty * 10;
+				}
+				else Sleep(500);
 			}
 		}
-		return voidptr;
+		return;
 	}
 
 	bool run() {
-		memset(watchable,false,sizeof(watchable));
-		memset(steps,0x7f7f7f,sizeof(steps));
-		memset(autoEnabled,false,sizeof(autoEnabled));
-		nowKiller=0;
-		attactCount=0;
+		memset(watchable, false, sizeof(watchable));
+		memset(steps, 0x7f7f7f, sizeof(steps));
+		memset(autoEnabled, false, sizeof(autoEnabled));
+		nowKiller = 0;
+		attactCount = 0;
 		lookAtMap();
-		paused=false;
-		start=true;
-		pthread_t setStep;
-		pthread_create(&setStep,NULL,resetStepThread,voidptr);
-		pthread_t setStepSurviror;
-		pthread_create(&setStepSurviror,NULL,resetSurvirorStepThread,voidptr);
-		while(gameOver>0&&killersAlive>0) {
-			while(!(KEY_DOWN('W')||KEY_DOWN('A')||KEY_DOWN('S')||KEY_DOWN('D')||KEY_DOWN('F')||KEY_DOWN(VK_SPACE)||KEY_DOWN(VK_LEFT)||KEY_DOWN(VK_RIGHT)||KEY_DOWN(VK_UP)||KEY_DOWN(VK_DOWN)||KEY_DOWN('Q')||KEY_DOWN('E')||KEY_DOWN(VK_NUMPAD5)||KEY_DOWN(VK_NUMPAD4)||KEY_DOWN(VK_NUMPAD6)||KEY_DOWN(VK_NUMPAD8)||KEY_DOWN(VK_NUMPAD2)||KEY_DOWN(VK_NUMPAD7)||KEY_DOWN(VK_NUMPAD9))) {
-				if(KEY_DOWN(VK_ESCAPE)) {
-					paused=true;
-					if(gameOver<=0||killersAlive<=0)return killersAlive>0;
-					else if(MessageBox(NULL,"ƒ„“™ÕÀ≥ˆ±ææ÷”Œœ∑¬£ø","Ã· æ",
-					              MB_ICONINFORMATION|MB_YESNO)==IDYES) {
-						gameOver=0;
-						paused=false;
+		paused = false;
+		start = true;
+		thread setStep(resetStepThread), setStepSurviror(resetSurvirorStepThread);
+
+		while (gameOver > 0 && killersAlive > 0) {
+			while (!(KEY_DOWN(VK_LBUTTON) || KEY_DOWN('W') || KEY_DOWN('A') || KEY_DOWN('S') || KEY_DOWN('D') || KEY_DOWN('F') || KEY_DOWN(VK_SPACE) || KEY_DOWN(VK_LEFT) || KEY_DOWN(VK_RIGHT) || KEY_DOWN(VK_UP) || KEY_DOWN(VK_DOWN) || KEY_DOWN('Q') || KEY_DOWN('E') || KEY_DOWN(VK_NUMPAD5) || KEY_DOWN(VK_NUMPAD4) || KEY_DOWN(VK_NUMPAD6) || KEY_DOWN(VK_NUMPAD8) || KEY_DOWN(VK_NUMPAD2) || KEY_DOWN(VK_NUMPAD7) || KEY_DOWN(VK_NUMPAD9))) {
+				if (KEY_DOWN(VK_ESCAPE)) {
+					paused = true;
+					if (gameOver <= 0 || killersAlive <= 0)return killersAlive > 0;
+					else if (MessageBox(NULL, L"‰Ω†Ë¶ÅÈÄÄÂá∫Êú¨Â±ÄÊ∏∏ÊàèÂêóÔºü", L"ÊèêÁ§∫",MB_ICONINFORMATION | MB_YESNO) == IDYES) {
+						gameOver = 0;
+						paused = false;
 						return false;
 					}
-					paused=false;
-				} else _sleep(5);
-				if(!alive[nowKiller]) {
-					for(nowKiller++; !alive[nowKiller]; nowKiller++) {
-						if(nowKiller>=NUM_KILLERS)nowKiller=0;
+					paused = false;
+				}
+				else Sleep(5);
+				if (!alive[nowKiller]) {
+					for (nowKiller++; !alive[nowKiller]; nowKiller++) {
+						if (nowKiller >= NUM_KILLERS)nowKiller = 0;
 					}
 				}
 			}
-			if(KEY_DOWN(VK_UP)||KEY_DOWN('W')||KEY_DOWN(VK_NUMPAD8)) {
-				lastdirection[nowKiller]=0;
+			if (KEY_DOWN(VK_UP) || KEY_DOWN('W') || KEY_DOWN(VK_NUMPAD8)) {
+				lastdirection[nowKiller] = 0;
 			}
-			if(KEY_DOWN(VK_LEFT)||KEY_DOWN('A')||KEY_DOWN(VK_NUMPAD4)) {
-				lastdirection[nowKiller]=1;
+			if (KEY_DOWN(VK_LEFT) || KEY_DOWN('A') || KEY_DOWN(VK_NUMPAD4)) {
+				lastdirection[nowKiller] = 1;
 			}
-			if(KEY_DOWN(VK_DOWN)||KEY_DOWN('S')||KEY_DOWN(VK_NUMPAD2)) {
-				lastdirection[nowKiller]=2;
+			if (KEY_DOWN(VK_DOWN) || KEY_DOWN('S') || KEY_DOWN(VK_NUMPAD2)) {
+				lastdirection[nowKiller] = 2;
 			}
-			if(KEY_DOWN(VK_RIGHT)||KEY_DOWN('D')||KEY_DOWN(VK_NUMPAD6)) {
-				lastdirection[nowKiller]=3;
+			if (KEY_DOWN(VK_RIGHT) || KEY_DOWN('D') || KEY_DOWN(VK_NUMPAD6)) {
+				lastdirection[nowKiller] = 3;
 			}
-			if(KEY_DOWN(VK_SPACE)||KEY_DOWN('F')||KEY_DOWN(VK_NUMPAD5)) {
-				autoEnabled[nowKiller]=!autoEnabled[nowKiller];
+			if (KEY_DOWN(VK_SPACE) || KEY_DOWN('F') || KEY_DOWN(VK_NUMPAD5)) {
+				autoEnabled[nowKiller] = !autoEnabled[nowKiller];
 			}
-			if(KEY_DOWN('Q')||KEY_DOWN(VK_NUMPAD7)) {
-				for(nowKiller++; !alive[nowKiller]; nowKiller++) {
-					if(nowKiller>=NUM_KILLERS)nowKiller=0;
+			if (KEY_DOWN('Q') || KEY_DOWN(VK_NUMPAD7)) {
+				for (nowKiller++; !(alive[nowKiller]); nowKiller++) {
+					if (nowKiller >= NUM_KILLERS)nowKiller = 0;
 				}
 			}
-			if(KEY_DOWN('E')||KEY_DOWN(VK_NUMPAD9)) {
-				for(nowKiller--; !alive[nowKiller]; nowKiller--) {
-					if(nowKiller<=0)nowKiller=NUM_KILLERS;
+			if (KEY_DOWN('E') || KEY_DOWN(VK_NUMPAD9)) {
+				for (nowKiller--; !(alive[nowKiller]); nowKiller--) {
+					if (nowKiller < 0)nowKiller = NUM_KILLERS - 1;
 				}
 			}
-			_sleep(250);
+			Sleep(SURVIVOR_SPEED(NUM_MAXDIFFICULTY - difficulty));
 		}
-		return gameOver<=0&&killersAlive>0;
+		setStep.detach();
+		setStepSurviror.detach();
+		return gameOver <= 0 && killersAlive > 0;
 	}
 
-	bool cannotgo(int i,int ID) {
+	bool cannotgo(int i, int ID) {
 		switch (i) {
-			case 0:
-				if(!mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID]-1,killerPosY[ID],killerPosZ[ID]))return false;
-			case 1:
-				if(!mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID],killerPosY[ID]-1,killerPosZ[ID]))return false;
-			case 2:
-				if(!mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID]+1,killerPosY[ID],killerPosZ[ID]))return false;
-			case 3:
-				if(!mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]
-				        &&!isKillerHere(killerPosX[ID],killerPosY[ID]+1,killerPosZ[ID]))return false;
+		case 0:
+			if (!mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID] - 1, killerPosY[ID], killerPosZ[ID]))return false;
+		case 1:
+			if (!mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID], killerPosY[ID] - 1, killerPosZ[ID]))return false;
+		case 2:
+			if (!mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID] + 1, killerPosY[ID], killerPosZ[ID]))return false;
+		case 3:
+			if (!mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]]
+				&& !isKillerHere(killerPosX[ID], killerPosY[ID] + 1, killerPosZ[ID]))return false;
 		}
 		return true;
 	}
 
-	int min4(int a,int b,int c,int d) {
-		return min(min(a,b),min(c,d));
+	int min4(int a, int b, int c, int d) {
+		return min(min(a, b), min(c, d));
 	}
 
 
 	int killerChooseWhereToGo(int ID) {
-		if(lastdirection[ID]>=0&&lastdirection[ID]<=3) {
-			int tmp=lastdirection[ID];
-			lastdirection[ID]=-1;
+		if (lastdirection[ID] >= 0 && lastdirection[ID] <= 3) {
+			int tmp = lastdirection[ID];
+			lastdirection[ID] = -1;
 			return tmp;
 		}
-		if(!autoEnabled[ID])return -1;
-		int Steps[4]= {	steps[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]],
-		                steps[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]],
-		                steps[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]],
-		                steps[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]
-		              };
-		int maps[4]= {	mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]],
-		                mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]],
-		                mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]],
-		                mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]
-		             };
-		int minDirection=-1,minChoice=INT_MAX,i;
-		for(i=0; i<4; i++)
-			if(Steps[i]<minChoice&&maps[i]!=-1&&maps[i]!=1) {
-				minChoice=Steps[i];
-				minDirection=i;
+		if (!autoEnabled[ID])return -1;
+		int Steps[4] = { steps[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]],
+						steps[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]],
+						steps[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]],
+						steps[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]]
+		};
+		int maps[4] = { mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]],
+						mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]],
+						mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]],
+						mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]]
+		};
+		int minDirection = -1, minChoice = INT_MAX, i;
+		for (i = 0; i < 4; i++)
+			if (Steps[i] < minChoice && maps[i] != -1 && maps[i] != 1) {
+				minChoice = Steps[i];
+				minDirection = i;
 			}
 		return minDirection;
 	}
 
-	void *killer(void *threadid) {
-		int attackForce,ID=*((int*)threadid),invisibleTime=8-difficulty*1;
-		alive[ID]=true;
-		stop[ID]=true;
-		if(Floor>1)
-			killerPosZ[ID]=1+rand()%(Floor-1);
-		else killerPosZ[ID]=1;
-		killerPosX[ID]=10+rand()%10-rand()%10;
-		killerPosY[ID]=10+rand()%10-rand()%10;
-		while(alive[ID]&&(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]!=0||isAnotherTrapHere(killerPosX[ID],killerPosY[ID],killerPosZ[ID],-1)||isPlayerAround(playerPosX,playerPosY,playerPosZ,killerPosX[ID],killerPosY[ID],killerPosZ[ID]))) {
-			killerPosX[ID]=10+rand()%10-rand()%10;
-			killerPosY[ID]=10+rand()%10-rand()%10;
+	void killer(int threadid) {
+		int attackForce, ID = threadid, invisibleTime = 8 - difficulty * 1;
+		alive[ID] = true;
+		stop[ID] = true;
+		if (Floor > 1)
+			killerPosZ[ID] = 1 + rand() % (Floor - 1);
+		else killerPosZ[ID] = 1;
+		killerPosX[ID] = 10 + rand() % 10 - rand() % 10;
+		killerPosY[ID] = 10 + rand() % 10 - rand() % 10;
+		while (alive[ID] && (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] != 0 || isAnotherTrapHere(killerPosX[ID], killerPosY[ID], killerPosZ[ID], -1) || isPlayerAround(playerPosX, playerPosY, playerPosZ, killerPosX[ID], killerPosY[ID], killerPosZ[ID]))) {
+			killerPosX[ID] = 10 + rand() % 10 - rand() % 10;
+			killerPosY[ID] = 10 + rand() % 10 - rand() % 10;
 		}
-		while(!start);
-		_sleep(5000);
-		stop[ID]=false;
-		while(gameOver>0&&alive[ID]) {
-			attackForce=90+20*difficulty+(NUM_KILLERS-killersAlive)*(2+difficulty);
-			if(invisibleTime>0)
+		while (!start);
+		Sleep(5000);
+		stop[ID] = false;
+		while (gameOver > 0 && alive[ID]) {
+			attackForce = 90 + 20 * difficulty + (NUM_KILLERS - killersAlive) * (2 + difficulty);
+			if (invisibleTime > 0)
 				invisibleTime--;
-			while(paused)_sleep(10);
-			if(ability==1)
-				if(gameOver<400)
-					decay=(400-gameOver)/100;
-			if(killersSleep) {
-				while(killersSleep)
-					if(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]==1
-					        ||mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]==-1) {
-						mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]=0;
-						gameOver-=100;
+			while (paused)Sleep(10);
+			if (ability == 1)
+				if (gameOver < 400)
+					Decay = (400 - gameOver) / 100;
+			if (killersSleep) {
+				while (killersSleep)
+					if (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] == 1
+						|| mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] == -1) {
+						mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] = 0;
+						gameOver -= 100;
 						attactCount++;
 					}
-				attackForce=int(1.5*attackForce);
+				attackForce = int(1.5 * attackForce);
 			}
-			killerDirection[ID]=killerChooseWhereToGo(ID);
-			switch(killerDirection[ID]) {
-				case 0:
-					if(mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]-1][killerPosY[ID]][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID]-1,killerPosY[ID],killerPosZ[ID])))
-						killerPosX[ID]--;
-					break;
-				case 1:
-					if(mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]][killerPosY[ID]-1][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID],killerPosY[ID]-1,killerPosZ[ID])))
-						killerPosY[ID]--;
-					break;
-				case 2:
-					if(mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]+1][killerPosY[ID]][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID]+1,killerPosY[ID],killerPosZ[ID])))
-						killerPosX[ID]++;
-					break;
-				case 3:
-					if(mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]!=1
-					        &&mapG[killerPosX[ID]][killerPosY[ID]+1][killerPosZ[ID]]!=-1
-					        &&(!isKillerHere(killerPosX[ID],killerPosY[ID]+1,killerPosZ[ID])))
-						killerPosY[ID]++;
-					break;
+			killerDirection[ID] = killerChooseWhereToGo(ID);
+			switch (killerDirection[ID]) {
+			case 0:
+				if (mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]] != 1
+					&& mapG[killerPosX[ID] - 1][killerPosY[ID]][killerPosZ[ID]] != -1
+					&& (!isKillerHere(killerPosX[ID] - 1, killerPosY[ID], killerPosZ[ID])))
+					killerPosX[ID]--;
+				break;
+			case 1:
+				if (mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]] != 1
+					&& mapG[killerPosX[ID]][killerPosY[ID] - 1][killerPosZ[ID]] != -1
+					&& (!isKillerHere(killerPosX[ID], killerPosY[ID] - 1, killerPosZ[ID])))
+					killerPosY[ID]--;
+				break;
+			case 2:
+				if (mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]] != 1
+					&& mapG[killerPosX[ID] + 1][killerPosY[ID]][killerPosZ[ID]] != -1
+					&& (!isKillerHere(killerPosX[ID] + 1, killerPosY[ID], killerPosZ[ID])))
+					killerPosX[ID]++;
+				break;
+			case 3:
+				if (mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]] != 1
+					&& mapG[killerPosX[ID]][killerPosY[ID] + 1][killerPosZ[ID]] != -1
+					&& (!isKillerHere(killerPosX[ID], killerPosY[ID] + 1, killerPosZ[ID])))
+					killerPosY[ID]++;
+				break;
 			}
-			if(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]>=2
-			        &&mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]<=9) {
-				killerPosZ[ID]=10-mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]];
-				if(mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]!=-1&&mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]!=1)
-					switch(killerDirection[ID]) {
-						case 0:
-							playerPosX+=1;
-							killerDirection[ID]=2;
-							break;
-						case 1:
-							playerPosY+=1;
-							killerDirection[ID]=3;
-							break;
-						case 2:
-							playerPosX-=1;
-							killerDirection[ID]=0;
-							break;
-						case 3:
-							playerPosY-=1;
-							killerDirection[ID]=1;
-							break;
+			if (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] >= 2
+				&& mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] <= 9) {
+				killerPosZ[ID] = 10 - mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]];
+				if (mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] != -1 && mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] != 1)
+					switch (killerDirection[ID]) {
+					case 0:
+						playerPosX += 1;
+						killerDirection[ID] = 2;
+						break;
+					case 1:
+						playerPosY += 1;
+						killerDirection[ID] = 3;
+						break;
+					case 2:
+						playerPosX -= 1;
+						killerDirection[ID] = 0;
+						break;
+					case 3:
+						playerPosY -= 1;
+						killerDirection[ID] = 1;
+						break;
 					}
-				_sleep(1500+difficulty*500);
+				Sleep(KILLER_FLOOR((NUM_MAXDIFFICULTY - difficulty)));
 			}
-			_sleep(300+difficulty*100);
-			if(isAnotherTrapHere(killerPosX[ID],killerPosY[ID],killerPosZ[ID],-1)
-			        &&(!invisibleTime)) {
+			Sleep(KILLER_SPEED(NUM_MAXDIFFICULTY - difficulty));
+			if (isAnotherTrapHere(killerPosX[ID], killerPosY[ID], killerPosZ[ID], -1)
+				&& (!invisibleTime)) {
 				killsByTraps++;
-				if(killsByBlock>=2&&(achievementsUnlockedNow/8)%2==0)
-					achieveBlock=true;
-				killsByBlock=0;
+				if (killsByBlock >= 2 && (achievementsUnlockedNow / 8) % 2 == 0)
+					achieveBlock = true;
+				killsByBlock = 0;
 				int i;
-				for(i=0; !(trapPosX[i]==killerPosX[ID]&&trapPosY[i]==killerPosY[ID]
-				           &&trapPosZ[i]==killerPosZ[ID]); i++);
-				trapPosX[i]=-1;
-				trapPosY[i]=-1;
-				trapPosZ[i]=-1;
+				for (i = 0; !(trapPosX[i] == killerPosX[ID] && trapPosY[i] == killerPosY[ID]
+					&& trapPosZ[i] == killerPosZ[ID]); i++);
+				trapPosX[i] = -1;
+				trapPosY[i] = -1;
+				trapPosZ[i] = -1;
 				killersAlive--;
-				killerPosX[ID]=-1;
-				killerPosY[ID]=-1;
-				killerPosZ[ID]=-1;
-				alive[ID]=false;
-				gameOver+=100;
-				return voidptr;
+				killerPosX[ID] = -1;
+				killerPosY[ID] = -1;
+				killerPosZ[ID] = -1;
+				alive[ID] = false;
+				gameOver += HEALTH_PER_KILL(NUM_MAXDIFFICULTY - difficulty);
+				return;
 			}
-			if(isPlayerAround(playerPosX,playerPosY,playerPosZ,killerPosX[ID],
-			                  killerPosY[ID],killerPosZ[ID])&&(!invisibleTime)) {
-				gameOver-=attackForce;
-				bloodkill*=2;
-				if(ability==2)
-					attackForce+=25;
-				stop[ID]=true;
-				_sleep(9000+difficulty*2000);
-				stop[ID]=false;
-				if(killsWithoutHurt>=2&&(achievementsUnlockedNow/32)%2==0)
-					achieveNotHurt=true;
-				killsWithoutHurt=0;
+			if (isPlayerAround(playerPosX, playerPosY, playerPosZ, killerPosX[ID],
+				killerPosY[ID], killerPosZ[ID]) && (!invisibleTime)) {
+				gameOver -= attackForce;
+				bloodkill *= 2;
+				if (ability == 2)
+					attackForce += 25;
+				stop[ID] = true;
+				Sleep(KILLER_STUN(NUM_MAXDIFFICULTY - difficulty));
+				stop[ID] = false;
+				if (killsWithoutHurt >= 2 && (achievementsUnlockedNow / 32) % 2 == 0)
+					achieveNotHurt = true;
+				killsWithoutHurt = 0;
 			}
-			if(isPlayerAround(playerPosX,playerPosY,playerPosZ,killerPosX[ID],
-			                  killerPosY[ID],killerPosZ[ID])&&invisibleTime) {
-				stop[ID]=true;
-				_sleep(5000);
-				stop[ID]=false;
-				invisibleTime=0;
+			if (isPlayerAround(playerPosX, playerPosY, playerPosZ, killerPosX[ID],
+				killerPosY[ID], killerPosZ[ID]) && invisibleTime) {
+				stop[ID] = true;
+				Sleep(KILLER_SPEED(NUM_MAXDIFFICULTY - difficulty) * 2);
+				stop[ID] = false;
+				invisibleTime = 0;
 			}
-			if((mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]]==1)&&(!invisibleTime)) {
+			if ((mapG[killerPosX[ID]][killerPosY[ID]][killerPosZ[ID]] == 1) && (!invisibleTime)) {
 				killsByBlock++;
-				if(killsByTraps>=2&&(achievementsUnlockedNow/2)%2==0)
-					achieveTraps=true;
-				killsByTraps=0;
+				if (killsByTraps >= 2 && (achievementsUnlockedNow / 2) % 2 == 0)
+					achieveTraps = true;
+				killsByTraps = 0;
 				killersAlive--;
-				killerPosX[ID]=-1;
-				killerPosY[ID]=-1;
-				killerPosZ[ID]=-1;
-				alive[ID]=false;
-				gameOver+=100;
-				return voidptr;
+				killerPosX[ID] = -1;
+				killerPosY[ID] = -1;
+				killerPosZ[ID] = -1;
+				alive[ID] = false;
+				gameOver += HEALTH_PER_KILL(NUM_MAXDIFFICULTY - difficulty);
+				return;
 			}
 		}
-		return voidptr;
+		return;
 	}
 
-	void *showMap(void *id) {
+	void showMap() {
 		system("cls");
 		system("color F0");
-		printf("              [º”‘ÿ÷–..]                  \n");
-		for(int i=0; i<22; i++) {
-			for(int j=0; j<22; j++) {
-				if(playerPosX==i&&playerPosY==j&&killerPosZ[nowKiller]==playerPosZ) {
-					switch(direction) {
-						case 0:
-							printf("%c ",'\030');
-							break;
-						case 1:
-							printf("%c ",'\033');
-							break;
-						case 2:
-							printf("%c ",'\031');
-							break;
-						case 3:
-							printf("%c ",'\032');
-							break;
-						default:
-							exit(0);
+		printf("              [Âä†ËΩΩ‰∏≠..]                  \n");
+		for (int i = 0; i < 22; i++) {
+			for (int j = 0; j < 22; j++) {
+				if (playerPosX == i && playerPosY == j && killerPosZ[nowKiller] == playerPosZ) {
+					switch (direction) {
+					case 0:
+						printf("‚Üë");
+						break;
+					case 1:
+						printf("‚Üê");
+						break;
+					case 2:
+						printf("‚Üì");
+						break;
+					case 3:
+						printf("‚Üí");
+						break;
+					default:
+						exit(0);
 					}
 					continue;
-				} else if(mapG[i][j][killerPosZ[nowKiller]]>=2&&mapG[i][j][killerPosZ[nowKiller]]<=9) {
-					printf("%dF",10-mapG[i][j][killerPosZ[nowKiller]]);
+				}
+				else if (mapG[i][j][killerPosZ[nowKiller]] >= 2 && mapG[i][j][killerPosZ[nowKiller]] <= 9) {
+					printf("%dF", 10 - mapG[i][j][killerPosZ[nowKiller]]);
 					continue;
-				} else if(isKillerHere(i,j,killerPosZ[nowKiller])) {
-					if(killerPosX[nowKiller]==i&&killerPosY[nowKiller]==j) {
+				}
+				else if (isKillerHere(i, j, killerPosZ[nowKiller])) {
+					if (killerPosX[nowKiller] == i && killerPosY[nowKiller] == j) {
 						printf("><");
-					} else
+					}
+					else
 						printf("K ");
 					continue;
-				} else if(mapG[i][j][killerPosZ[nowKiller]]==-1) {
-					printf("°ˆ");
+				}
+				else if (mapG[i][j][killerPosZ[nowKiller]] == -1) {
+					printf("‚ñ†");
 					continue;
-				} else if(isAnotherTrapHere(i,j,killerPosZ[nowKiller],-1)) {
+				}
+				else if (isAnotherTrapHere(i, j, killerPosZ[nowKiller], -1)) {
 					printf("O ");
 					continue;
-				} else if(mapG[i][j][killerPosZ[nowKiller]]==1) {
-					printf("°ı");
+				}
+				else if (mapG[i][j][killerPosZ[nowKiller]] == 1) {
+					printf("‚ñ°");
 					continue;
-				} else printf("  ");
+				}
+				else printf("  ");
 			}
 			printf("\n");
 		}
-		if(Floor>1)
-			printf("ƒ„‘⁄%d¬•,«Û…˙’ﬂ‘⁄%d¬•\n",killerPosZ[nowKiller],playerPosZ);
-		printf(" £”‡…± ÷ ˝:%3d,",killersAlive);
-		if(autoEnabled[nowKiller])
-			printf("ø™∆Ù◊‘∂Ø––◊ﬂ,     ");
-		printf("\nHP:%3d ",gameOver);
-		for(int p=0; p<=1+gameOver/200; p++)
-			printf("°ˆ");
+		if (Floor > 1)
+			printf("‰Ω†Âú®%dÊ•º,Ê±ÇÁîüËÄÖÂú®%dÊ•º\n", killerPosZ[nowKiller], playerPosZ);
+		printf("Ââ©‰ΩôÊùÄÊâãÊï∞:%3d,", killersAlive);
+		if (autoEnabled[nowKiller])
+			printf("ÂºÄÂêØËá™Âä®Ë°åËµ∞,     ");
+		printf("\nHP:%3d ", gameOver);
+		for (int p = 0; p <= 1 + gameOver / 200; p++)
+			printf("‚ñ†");
 		printf("              \n");
-		switch(playerType) {
-			case 0:
-				break;
-			case 1:
-				printf("ø…”√∑ΩøÈ ˝:%d     ",special);
-				break;
-			case 2:
-				printf("÷Œ¡∆Ω¯≥Ã:%d%c    ",special,'%');
-				for(int p=0; p<special/10; p++)
-					printf("°ˆ");
-				printf("                         ");
-				break;
-			case 3:
-				printf(" £”‡œ›⁄Â ˝:%d     ",special);
-				break;
-			case 4:
-				if(special<0) {
-					printf("ººƒ‹¿‰»¥÷–:");
-					for(int p=0; p<-special/6; p++)
-						printf("°ˆ");
-					for(int p=20; p>=-special/6; p--)printf("  ");
-				} else if(special>0) {
-					printf("≥Â¥Ã £”‡:");
-					for(int p=0; p<special/3; p++)
-						printf("°ˆ");
-					for(int p=20; p>=special/3; p--)printf("  ");
-				} else printf("…¡œ÷≥Â¥Ãø…”√°£     ");
-				break;
-			default:
-				printf("Œﬁ–ßµƒΩ«…´¿‡–Õ%d£°",playerType);
+		switch (playerType) {
+		case 0:
+			break;
+		case 1:
+			printf("ÂèØÁî®ÊñπÂùóÊï∞:%d     ", special);
+			break;
+		case 2:
+			printf("Ê≤ªÁñóËøõÁ®ã:%d%c    ", special, '%');
+			for (int p = 0; p < special / 10; p++)
+				printf("‚ñ†");
+			printf("                         ");
+			break;
+		case 3:
+			printf("Ââ©‰ΩôÈô∑Èò±Êï∞:%d     ", special);
+			break;
+		case 4:
+			if (special < 0) {
+				printf("ÊäÄËÉΩÂÜ∑Âç¥‰∏≠:");
+				for (int p = 0; p < -special / 6; p++)
+					printf("‚ñ†");
+				for (int p = 20; p >= -special / 6; p--)printf("  ");
+			}
+			else if (special > 0) {
+				printf("ÂÜ≤Âà∫Ââ©‰Ωô:");
+				for (int p = 0; p < special / 3; p++)
+					printf("‚ñ†");
+				for (int p = 20; p >= special / 3; p--)printf("  ");
+			}
+			else printf("Èó™Áé∞ÂÜ≤Âà∫ÂèØÁî®„ÄÇ     ");
+			break;
+		default:
+			printf("Êó†ÊïàÁöÑËßíËâ≤Á±ªÂûã%dÔºÅ", playerType);
 		}
-		if(gameOver<200)system("color 4C");
-		else if(gameOver<300)system("color C0");
-		else if(gameOver<400)system("color F0");
-		else if(gameOver<500)system("color 2F");
+		if (gameOver < 200)system("color 4C");
+		else if (gameOver < 300)system("color C0");
+		else if (gameOver < 400)system("color F0");
+		else if (gameOver < 500)system("color 2F");
 		else system("color 2A");
-		startTime=time(NULL);
-		while(gameOver>0&&killersAlive>0) {
-			SetConsoleCursorPosition(hOut,posStart);
-			nowTime=time(NULL)-startTime;
-			printf("              [%2ld:%2ld:%2ld]                  \n",nowTime/3600,
-			       (nowTime/60)%60,nowTime%60);
-			for(int i=0; i<22; i++) {
-				for(int j=0; j<22; j++) {
-					if(playerPosX==i&&playerPosY==j&&killerPosZ[nowKiller]==playerPosZ) {
-						switch(direction) {
-							case 0:
-								printf("%c ",'\030');
-								break;
-							case 1:
-								printf("%c ",'\033');
-								break;
-							case 2:
-								printf("%c ",'\031');
-								break;
-							case 3:
-								printf("%c ",'\032');
-								break;
-							default:
-								exit(0);
+		startTime = time(NULL);
+		while (gameOver > 0 && killersAlive > 0) {
+			SetConsoleCursorPosition(hOut, posStart);
+			nowTime = time(NULL) - startTime;
+			printf("              [%2ld:%2ld:%2ld]                  \n", nowTime / 3600,
+				(nowTime / 60) % 60, nowTime % 60);
+			for (int i = 0; i < 22; i++) {
+				for (int j = 0; j < 22; j++) {
+					if (playerPosX == i && playerPosY == j && killerPosZ[nowKiller] == playerPosZ) {
+						switch (direction) {
+						case 0:
+							printf("‚Üë");
+							break;
+						case 1:
+							printf("‚Üê");
+							break;
+						case 2:
+							printf("‚Üì");
+							break;
+						case 3:
+							printf("‚Üí");
+							break;
+						default:
+							exit(0);
 						}
 						continue;
-					} else if(mapG[i][j][killerPosZ[nowKiller]]>=2&&mapG[i][j][killerPosZ[nowKiller]]<=9) {
-						printf("%dF",10-mapG[i][j][killerPosZ[nowKiller]]);
+					}
+					else if (mapG[i][j][killerPosZ[nowKiller]] >= 2 && mapG[i][j][killerPosZ[nowKiller]] <= 9) {
+						printf("%dF", 10 - mapG[i][j][killerPosZ[nowKiller]]);
 						continue;
-					} else if(mapG[i][j][killerPosZ[nowKiller]]==-1) {
-						printf("°ˆ");
+					}
+					else if (mapG[i][j][killerPosZ[nowKiller]] == -1) {
+						printf("‚ñ†");
 						continue;
-					} else if(isKillerHere(i,j,killerPosZ[nowKiller])) {
-						if(killerPosX[nowKiller]==i&&killerPosY[nowKiller]==j) {
+					}
+					else if (isKillerHere(i, j, killerPosZ[nowKiller])) {
+						if (killerPosX[nowKiller] == i && killerPosY[nowKiller] == j) {
 							printf("><");
-						} else
+						}
+						else
 							printf("K ");
 						continue;
-					} else if(isAnotherTrapHere(i,j,killerPosZ[nowKiller],-1)) {
+					}
+					else if (isAnotherTrapHere(i, j, killerPosZ[nowKiller], -1)) {
 						printf("O ");
 						continue;
-					} else if(mapG[i][j][killerPosZ[nowKiller]]==1) {
-						printf("°ı");
+					}
+					else if (mapG[i][j][killerPosZ[nowKiller]] == 1) {
+						printf("‚ñ°");
 						continue;
-					} else printf("  ");
+					}
+					else printf("  ");
 				}
 				printf("\n");
 			}
-			if(Floor>1)
-				printf("ƒ„‘⁄%d¬•,«Û…˙’ﬂ‘⁄%d¬•\n",killerPosZ[nowKiller],playerPosZ);
-			printf(" £”‡…± ÷ ˝:%3d,",killersAlive);
-			if(autoEnabled[nowKiller])
-				printf("ø™∆Ù◊‘∂Ø––◊ﬂ,");
-			if(stop[nowKiller])
-				printf("¿‰»¥÷–...");
+			if (Floor > 1)
+				printf("‰Ω†Âú®%dÊ•º,Ê±ÇÁîüËÄÖÂú®%dÊ•º\n", killerPosZ[nowKiller], playerPosZ);
+			printf("Ââ©‰ΩôÊùÄÊâãÊï∞:%3d,", killersAlive);
+			if (autoEnabled[nowKiller])
+				printf("ÂºÄÂêØËá™Âä®Ë°åËµ∞,");
+			if (stop[nowKiller])
+				printf("ÂÜ∑Âç¥‰∏≠...");
 			printf("              ");
-			printf("\nHP:%3d ",gameOver);
-			for(int p=0; p<=1+gameOver/200; p++)
-				printf("°ˆ");
+			printf("\nHP:%3d ", gameOver);
+			for (int p = 0; p <= 1 + gameOver / 200; p++)
+				printf("‚ñ†");
 			printf("              \n");
-			switch(playerType) {
-				case 0:
-					break;
-				case 1:
-					printf("ø…”√∑ΩøÈ ˝:%d     ",special);
-					break;
-				case 2:
-					printf("÷Œ¡∆Ω¯≥Ã:%d%c    ",special,'%');
-					for(int p=0; p<special/10; p++)
-						printf("°ˆ");
-					printf("                         ");
-					break;
-				case 3:
-					printf(" £”‡œ›⁄Â ˝:%d     ",special);
-					break;
-				case 4:
-					if(special<0) {
-						printf("ººƒ‹¿‰»¥÷–:");
-						for(int p=0; p<-special/6; p++)
-							printf("°ˆ");
-						for(int p=20; p>=-special/6; p--)printf("  ");
-					} else if(special>0) {
-						printf("≥Â¥Ã £”‡:");
-						for(int p=0; p<special/3; p++)
-							printf("°ˆ");
-						for(int p=20; p>=special/3; p--)printf("  ");
-					} else printf("…¡œ÷≥Â¥Ãø…”√°£     ");
-					break;
-				default:
-					printf("Œﬁ–ßµƒΩ«…´¿‡–Õ%d£°",playerType);
+			switch (playerType) {
+			case 0:
+				break;
+			case 1:
+				printf("ÂèØÁî®ÊñπÂùóÊï∞:%d     ", special);
+				break;
+			case 2:
+				printf("Ê≤ªÁñóËøõÁ®ã:%d%c    ", special, '%');
+				for (int p = 0; p < special / 10; p++)
+					printf("‚ñ†");
+				printf("                         ");
+				break;
+			case 3:
+				printf("Ââ©‰ΩôÈô∑Èò±Êï∞:%d     ", special);
+				break;
+			case 4:
+				if (special < 0) {
+					printf("ÊäÄËÉΩÂÜ∑Âç¥‰∏≠:");
+					for (int p = 0; p < -special / 6; p++)
+						printf("‚ñ†");
+					for (int p = 20; p >= -special / 6; p--)printf("  ");
+				}
+				else if (special > 0) {
+					printf("ÂÜ≤Âà∫Ââ©‰Ωô:");
+					for (int p = 0; p < special / 3; p++)
+						printf("‚ñ†");
+					for (int p = 20; p >= special / 3; p--)printf("  ");
+				}
+				else printf("Èó™Áé∞ÂÜ≤Âà∫ÂèØÁî®„ÄÇ     ");
+				break;
+			default:
+				printf("Êó†ÊïàÁöÑËßíËâ≤Á±ªÂûã%dÔºÅ", playerType);
 			}
-			if(gameOver<200)system("color 4C");
-			else if(gameOver<300)system("color C0");
-			else if(gameOver<400)system("color F0");
-			else if(gameOver<500)system("color 2F");
+			if (gameOver < 200)system("color 4C");
+			else if (gameOver < 300)system("color C0");
+			else if (gameOver < 400)system("color F0");
+			else if (gameOver < 500)system("color 2F");
 			else system("color 2A");
-			if(playerType==4&&special<0) {
+			if (playerType == 4 && special < 0) {
 				special++;
 			}
-			_sleep(50);
-			while(paused) {
-				startTime=time(NULL)-nowTime;
+			Sleep(50);
+			while (paused) {
+				startTime = time(NULL) - nowTime;
 			}
 		}
 		system("cls");
-		return voidptr;
+		return;
 	}
 
 	void teachingLesson() {
 		system("cls");
-		COORD posLesson= {12,10};
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("ª∂”≠ÕÊ 1 Survivor Versus 2 Killers!  ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("‘⁄’‚∏ˆƒ£ Ω¿Ô£¨ƒ„“™øÿ÷∆“ª¥Û»∫…± ÷…±À¿…˙¥Ê’ﬂ°£         ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("…± ÷√«‘⁄”Œœ∑÷–ª·“‘◊÷∑˚ \"K\"¿¥±Ì æ°£             ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("”Œœ∑÷–…˙¥Ê’ﬂª·±ª◊˜Œ™º˝Õ∑±Íº«£¨¥¯”–◊‘º∫µƒººƒ‹°£     ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("”Œœ∑÷–ª·ÀÊª˙≤˙…˙œ›⁄Â,”√◊÷∑˚\"O\"±Ì æ°£                 ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("…± ÷ª·±ªœ›⁄Â…À∫¶,Õ¨ ±œ›⁄Â±ª∆∆ªµ,µ´«Û…˙’ﬂ≤ªª·±ªœ›⁄Â…±À¿°£         ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("√ø√˚…± ÷∂ºø…“‘…Ë∂®◊‘∂Ø––◊ﬂ,”√FªÚSpaceº§ªÓ°£              ");
-		_sleep(2500);
-		SetConsoleCursorPosition(hOut,posLesson);
-		printf("”Œœ∑∑÷≥…Àƒ∏ˆƒ—∂»£¨øÏ¿¥ÕÊ∞…£°                           ");
-		_sleep(2500);
+		COORD posLesson = { 12,10 };
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê¨¢ËøéÁé© 1 Survivor Versus 2 Killers!  ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Âú®Ëøô‰∏™Ê®°ÂºèÈáåÔºå‰Ω†Ë¶ÅÊéßÂà∂‰∏ÄÂ§ßÁæ§ÊùÄÊâãÊùÄÊ≠ªÁîüÂ≠òËÄÖ„ÄÇ         ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("ÊùÄÊâã‰ª¨Âú®Ê∏∏Êàè‰∏≠‰ºö‰ª•Â≠óÁ¨¶ \"K\"Êù•Ë°®Á§∫„ÄÇ             ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê∏∏Êàè‰∏≠ÁîüÂ≠òËÄÖ‰ºöË¢´‰Ωú‰∏∫ÁÆ≠Â§¥Ê†áËÆ∞ÔºåÂ∏¶ÊúâËá™Â∑±ÁöÑÊäÄËÉΩ„ÄÇ     ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê∏∏Êàè‰∏≠‰ºöÈöèÊú∫‰∫ßÁîüÈô∑Èò±,Áî®Â≠óÁ¨¶\"O\"Ë°®Á§∫„ÄÇ                 ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("ÊùÄÊâã‰ºöË¢´Èô∑Èò±‰º§ÂÆ≥,ÂêåÊó∂Èô∑Èò±Ë¢´Á†¥Âùè,‰ΩÜÊ±ÇÁîüËÄÖ‰∏ç‰ºöË¢´Èô∑Èò±ÊùÄÊ≠ª„ÄÇ         ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("ÊØèÂêçÊùÄÊâãÈÉΩÂèØ‰ª•ËÆæÂÆöËá™Âä®Ë°åËµ∞,Áî®FÊàñSpaceÊøÄÊ¥ª„ÄÇ              ");
+		Sleep(2500);
+		SetConsoleCursorPosition(hOut, posLesson);
+		printf("Ê∏∏ÊàèÂàÜÊàêÂõõ‰∏™ÈöæÂ∫¶ÔºåÂø´Êù•Áé©ÂêßÔºÅ                           ");
+		Sleep(2500);
 	}
 
 	void offlineKiller() {
-		memset(mapG,0x7f,sizeof(mapG));
-		special=0,score=0,difficulty=0;
-		scoreboard=fopen("suvirorScoreboard","r");
-		achievement=fopen("suvirorAchievement","r");
-		fscanf(achievement,"%lld",&achievementsUnlockedNow);
-		fscanf(scoreboard,"%d%lld%d",&historyMaxScore,&totalScore,&level);
-		debuger=fopen("DebugOutPut.txt","r");
-		if(debuger) {
-			debugEnable=true;
+		memset(mapG, 0x7f, sizeof(mapG));
+		special = 0, score = 0, difficulty = 0;
+		scoreboard = fopen("suvirorScoreboard", "r");
+		achievement = fopen("suvirorAchievement", "r");
+		fscanf(achievement, "%lld", &achievementsUnlockedNow);
+		fscanf(scoreboard, "%d%lld%d", &historyMaxScore, &totalScore, &level);
+		debuger = fopen("DebugOutPut.txt", "r");
+		if (debuger) {
+			debugEnable = true;
 			fclose(debuger);
-			debuger=fopen("DebugOutPut.txt","w");
+			debuger = fopen("DebugOutPut.txt", "w");
 		}
-		_sleep(1000);
-		if(!chooseDifficulties()) {
+		Sleep(1000);
+		if (!chooseDifficulties()) {
 			fclose(debuger);
 			fclose(scoreboard);
 			fclose(achievement);
 			return;
 		}
-		switch(difficulty) {
-			case -2:
-				NUM_KILLERS=2;
-				NUM_VIEWMAXRADIUS=30;
-				NUM_VIEWMINRADIUS=30;
-				break;
-			case -1:
-				teachingLesson();
-				return;
-			case 0:
-				NUM_KILLERS=15;
-				NUM_VIEWMAXRADIUS=30;
-				break;
-			case 1:
-				NUM_KILLERS=10;
-				NUM_VIEWMAXRADIUS=10;
-				break;
-			case 2:
-				NUM_KILLERS=5;
-				NUM_VIEWMAXRADIUS=5;
-				break;
-			case 3:
-				NUM_KILLERS=2;
-				NUM_VIEWMAXRADIUS=5;
+		switch (difficulty) {
+		case -2:
+			NUM_KILLERS = 2;
+			NUM_VIEWMAXRADIUS = 30;
+			NUM_VIEWMINRADIUS = 30;
+			break;
+		case -1:
+			teachingLesson();
+			return;
+		case 0:
+			NUM_KILLERS = 15;
+			NUM_VIEWMAXRADIUS = 30;
+			break;
+		case 1:
+			NUM_KILLERS = 10;
+			NUM_VIEWMAXRADIUS = 10;
+			break;
+		case 2:
+			NUM_KILLERS = 5;
+			NUM_VIEWMAXRADIUS = 5;
+			break;
+		case 3:
+			NUM_KILLERS = 2;
+			NUM_VIEWMAXRADIUS = 5;
 		}
-		killersAlive=NUM_KILLERS;
-		_sleep(1000);
-		playerType=rand()%NUM_MAXPLAYERTYPE;
-		_sleep(1000);
-		ability=rand()%2?(rand()*rand()%time(NULL)+rand()*time(NULL))%NUM_MAXABILITYNUM:-1;
+		killersAlive = NUM_KILLERS;
+		Sleep(1000);
+		playerType = rand() % NUM_MAXPLAYERTYPE;
+		Sleep(1000);
+		ability = rand() % 2 ? (rand() * rand() % time(NULL) + rand() * time(NULL)) % NUM_MAXABILITYNUM : -1;
 		system("cls");
-		printf("∞¥WASD“∆∂ØΩ«…´,∞¥Qº¸ªÚE«–ªªøÿ÷∆…± ÷,Spaceø™∆Ù◊‘∂Ø––◊ﬂ\n");
-		pthread_t threads[20],printMapT,survirorT;
-		int indexes[20],i,loopTimes,loopTimesZ;
-		if(!readMap()) {
-			printf("¥ÌŒÛ!µÿÕºŒƒº˛Àªµ!\n«Î”ÎŒ“√«¡™œµ“‘ªÒµ√µÿÕºŒƒº˛!\n");
+
+		thread threads[20], printMapT(showMap), survirorT(surviror);
+		for (int it = 0; it < NUM_KILLERS; it++)
+			threads[it] = thread(killer, it);
+		int indexes[20], i, loopTimes, loopTimesZ = 0,maxNum;
+		i = 0;
+		do {
+			i++;
+			mapNames = "map";
+			if (i < 10)
+				mapNames += char('0' + i);
+			else {
+				mapNames += char('0' + i / 10);
+				mapNames += char('0' + i % 10);
+			}
+			mapNames += ".map";
+			maper = fopen(mapNames.c_str(), "r");
+			printf("Ê≠£Âú®Ê£ÄÁ¥¢Âú∞ÂõæÔºö%s\n", mapNames.c_str());
+		} while (maper && i <= NUM_MAXMAPNUM);
+		maxNum = i - 1;
+		printf("ÂÖ±ÊâæÂà∞%dÂº†Âú∞Âõæ„ÄÇ\n", maxNum);
+		if (maxNum == 0) {
+			printf("ÈîôËØØ!Êú™ÊâæÂà∞Âú∞ÂõæÊñá‰ª∂!\nËØ∑‰∏éÊàë‰ª¨ËÅîÁ≥ª‰ª•Ëé∑ÂæóÂú∞ÂõæÊñá‰ª∂!\n");
 			system("pause");
 			exit(-1);
 		}
-		i=1;
+		i = 1 + (rand() % maxNum);
+		mapNames = "map";
+		if (i < 10)
+			mapNames += char('0' + i);
+		else {
+			mapNames += char('0' + i / 10);
+			mapNames += char('0' + i % 10);
+		}
+		mapNames += ".map";
+		maper = fopen(mapNames.c_str(), "r");
+		if (!readMap(maper)) {
+			printf("ÈîôËØØ!Âú∞ÂõæÊñá‰ª∂ÊçüÂùè!\nËØ∑‰∏éÊàë‰ª¨ËÅîÁ≥ª‰ª•Ëé∑ÂæóÂú∞ÂõæÊñá‰ª∂!\n");
+			system("pause");
+			exit(-1);
+		}
+		printf("ÊåâWASDÁßªÂä®ËßíËâ≤,ÊåâQÈîÆÊàñEÂàáÊç¢ÊéßÂà∂ÊùÄÊâã,SpaceÂºÄÂêØËá™Âä®Ë°åËµ∞\n");
+		i = 1;
 		system("cls");
-		printf("º”‘ÿ÷–...\n");
-		playerPosX=0,playerPosY=0,playerPosZ=1;
+		printf("Âä†ËΩΩ‰∏≠...\n");
+		playerPosX = 0, playerPosY = 0, playerPosZ = 1;
 		do {
-			playerPosX=1+abs(rand()*time(NULL))%20;
-			loopTimes=0;
+			playerPosX = 1 + abs(rand() * time(NULL)) % 20;
+			loopTimes = 0;
 			loopTimesZ++;
 			do {
-				playerPosY=1+abs(rand()*time(NULL))%20;
+				playerPosY = 1 + abs(rand() * time(NULL)) % 20;
 				loopTimes++;
-			} while(mapG[playerPosX][playerPosY][playerPosZ]||loopTimes<5);
-		} while(mapG[playerPosX][playerPosY][playerPosZ]);
-		gameOver=475+75*difficulty;
-		pthread_create(&printMapT,NULL,showMap,voidptr);
-		pthread_create(&survirorT,NULL,surviror,voidptr);
+			} while (mapG[playerPosX][playerPosY][playerPosZ] || loopTimes < 5);
+		} while (mapG[playerPosX][playerPosY][playerPosZ]);
+		gameOver = 475 + 75 * difficulty;
 		setTrap();
-		for(i=0; i<NUM_KILLERS; i++) {
-			indexes[i] = i;
-			pthread_create(&threads[i],NULL,killer,(void*)(indexes+i));
+		result = run();
+		printMapT.join();
+		survirorT.join();
+		for (i = 0; i < NUM_KILLERS; i++) {
+			threads[i].join();
 		}
-		result=run();
-		_sleep(1000);
-		if(result&&gameOver<=0) {
+		Sleep(1000);
+		if (result && gameOver <= 0) {
 			system("color 2A");
-			printf("”Œœ∑Ω· ¯£¨ƒ„”Æ¡À£°\n");
-		} else {
-			system("color 4C");
-			printf("”Œœ∑Ω· ¯£¨ƒ„ ‰¡À£°\n");
+			printf("Ê∏∏ÊàèÁªìÊùüÔºå‰Ω†Ëµ¢‰∫ÜÔºÅ\n");
 		}
-		_sleep(5000);
+		else {
+			system("color 4C");
+			printf("Ê∏∏ÊàèÁªìÊùüÔºå‰Ω†Ëæì‰∫ÜÔºÅ\n");
+		}
+		Sleep(5000);
 		system("cls");
 		/*if(result&&gameOver>0) {
 
@@ -2726,7 +2875,7 @@ namespace offlineKiller {
 			}
 		} else {
 			if((achievementsUnlockedNow/512)%2==0&&difficulty==3
-			        &&(time(NULL)-startTime)>=600) {
+					&&(time(NULL)-startTime)>=600) {
 				achievementsUnlockedNow+=512;
 				printAchieveAchievement(11);
 			}
@@ -2744,191 +2893,203 @@ namespace offlineKiller {
 			printAchieveAchievement(6);
 		}
 		*/
-		if(result) {
-			timescore=(log(600)-log(time(NULL)-startTime))*500*(1+difficulty);
-			winGameScore=3000*(1+difficulty);
-		} else timescore=log(time(NULL)-startTime)*500*(1+difficulty);
-		beatKillerScore=(NUM_KILLERS-killersAlive)*1000*(1+difficulty);
-		specialScore*=100*(1+difficulty);
-		gameOver*=10*(1+difficulty);
-		_sleep(1000);
+		if (result) {
+			timescore = (log(600) - log(time(NULL) - startTime)) * 500 * (1 + difficulty);
+			winGameScore = 3000 * (1 + difficulty);
+		}
+		else timescore = log(time(NULL) - startTime) * 500 * (1 + difficulty);
+		beatKillerScore = (NUM_KILLERS - killersAlive) * 1000 * (1 + difficulty);
+		specialScore *= 100 * (1 + difficulty);
+		gameOver *= 10 * (1 + difficulty);
+		Sleep(1000);
 		system("cls");
-		gameOver=killersAlive;
-		if(gameOver<0)gameOver=0;
-		for(score=0; timescore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d                    \n ±º‰µ√∑÷£∫%d                         \nπ•ª˜Ω«…´µ√∑÷£∫%d                     \n”Æµ√”Œœ∑µ√∑÷£∫%d                     \n £”‡…± ÷µ√∑÷£∫%d                    \n",
-			       score,timescore,beatKillerScore,winGameScore,gameOver);
-			score+=50;
-			timescore-=50;
+		gameOver = killersAlive;
+		if (gameOver < 0)gameOver = 0;
+		for (score = 0; timescore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d                    \nÊó∂Èó¥ÂæóÂàÜÔºö%d                         \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö%d                     \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d                     \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d                    \n",
+				score, timescore, beatKillerScore, winGameScore, gameOver);
+			score += 50;
+			timescore -= 50;
 		}
-		for(; timescore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫%d                     \nπ•ª˜Ω«…´µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,timescore,beatKillerScore,winGameScore,gameOver);
-			score+=1;
-			timescore-=1;
+		for (; timescore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö%d                     \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, timescore, beatKillerScore, winGameScore, gameOver);
+			score += 1;
+			timescore -= 1;
 		}
-		for(; beatKillerScore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                     \nπ•ª˜Ω«…´µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,beatKillerScore,winGameScore,gameOver);
-			score+=50;
-			beatKillerScore-=50;
+		for (; beatKillerScore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                     \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, beatKillerScore, winGameScore, gameOver);
+			score += 50;
+			beatKillerScore -= 50;
 		}
-		for(; beatKillerScore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                  \nπ•ª˜Ω«…´µ√∑÷£∫%d              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,beatKillerScore,winGameScore,gameOver);
-			score+=1;
-			beatKillerScore-=1;
+		for (; beatKillerScore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                  \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö%d              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, beatKillerScore, winGameScore, gameOver);
+			score += 1;
+			beatKillerScore -= 1;
 		}
-		for(; winGameScore>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0                  \nπ•ª˜Ω«…´µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,winGameScore,gameOver);
-			score+=50;
-			winGameScore-=50;
+		for (; winGameScore >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0                  \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, winGameScore, gameOver);
+			score += 50;
+			winGameScore -= 50;
 		}
-		for(; winGameScore>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0              \nπ•ª˜Ω«…´µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫%d              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,winGameScore,gameOver);
-			score+=0;
-			winGameScore-=0;
+		for (; winGameScore > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0              \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö%d              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, winGameScore, gameOver);
+			score += 0;
+			winGameScore -= 0;
 		}
-		for(; gameOver>=50;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0              \nπ•ª˜Ω«…´µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫0              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,gameOver);
-			score+=50;
-			gameOver-=50;
+		for (; gameOver >= 50;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0              \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö0              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, gameOver);
+			score += 50;
+			gameOver -= 50;
 		}
-		for(; gameOver>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			printf("ƒ„µƒµ√∑÷£∫%d              \n ±º‰µ√∑÷£∫0              \nπ•ª˜Ω«…´µ√∑÷£∫0              \n”Æµ√”Œœ∑µ√∑÷£∫0              \n £”‡…± ÷µ√∑÷£∫%d              \n",
-			       score,gameOver);
-			score+=1;
-			gameOver-=1;
+		for (; gameOver > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			printf("‰Ω†ÁöÑÂæóÂàÜÔºö%d              \nÊó∂Èó¥ÂæóÂàÜÔºö0              \nÊîªÂáªËßíËâ≤ÂæóÂàÜÔºö0              \nËµ¢ÂæóÊ∏∏ÊàèÂæóÂàÜÔºö0              \nÂâ©‰ΩôÊùÄÊâãÂæóÂàÜÔºö%d              \n",
+				score, gameOver);
+			score += 1;
+			gameOver -= 1;
 		}
-		int scoremiddle=score,print;
-		fscanf(scoreboard,"%d%lld%d",&historyMaxScore,&totalScore,&level);
+		int scoremiddle = score, print;
+		fscanf(scoreboard, "%d%lld%d", &historyMaxScore, &totalScore, &level);
 		system("cls");
-		for(; scoremiddle>0;) {
-			SetConsoleCursorPosition(hOut,posStart);
-			if(historyMaxScore<=score) {
-				printf("\n      –¬º«¬º£°\n");
+		for (; scoremiddle > 0;) {
+			SetConsoleCursorPosition(hOut, posStart);
+			if (historyMaxScore <= score) {
+				printf("\n      Êñ∞ËÆ∞ÂΩïÔºÅ\n");
 				system("color CF");
-				historyMaxScore=score;
+				historyMaxScore = score;
 			}
-			printf("ƒ„µƒµ»º∂£∫%d              \nƒ„µƒ±æ¥Œµ√∑÷£∫%d              \nƒ„µƒ◊Ó∏ﬂµ√∑÷º«¬º£∫%d              \n%lld/%lf:",
-			       level,score,historyMaxScore,totalScore,(long long)1000*pow(1.1,level));
-			print=int(10*totalScore/(1000*pow(1.1,level)));
-			while(print>0) {
-				printf("°ˆ");
+			printf("‰Ω†ÁöÑÁ≠âÁ∫ßÔºö%d              \n‰Ω†ÁöÑÊú¨Ê¨°ÂæóÂàÜÔºö%d              \n‰Ω†ÁöÑÊúÄÈ´òÂæóÂàÜËÆ∞ÂΩïÔºö%d              \n%lld/%lld:",
+				level, score, historyMaxScore, totalScore, (long long)(1000 * pow(1.1, level)));
+			print = int(10 * totalScore / (1000 * pow(1.1, level)));
+			while (print > 0) {
+				printf("‚ñ†");
 				print--;
 			}
 			printf("                  ");
-			if(scoremiddle>=500) {
-				totalScore+=500;
-				scoremiddle-=500;
-			} else if(scoremiddle>=50) {
-				totalScore+=50;
-				scoremiddle-=50;
-			} else totalScore+=1;
-			scoremiddle-=1;
-			if(totalScore>=(long long)1000*pow(1.1,level)) {
-				totalScore-=(long long)1000*pow(1.1,level);
+			if (scoremiddle >= 500) {
+				totalScore += 500;
+				scoremiddle -= 500;
+			}
+			else if (scoremiddle >= 50) {
+				totalScore += 50;
+				scoremiddle -= 50;
+			}
+			else totalScore += 1;
+			scoremiddle -= 1;
+			if (totalScore >= (long long)1000 * pow(1.1, level)) {
+				totalScore -= (long long)1000 * pow(1.1, level);
 				level++;
 			}
 		}
 		fclose(achievement);
 		fclose(scoreboard);
-		achievement=fopen("suvirorAchievement","w+");
-		scoreboard=fopen("suvirorScoreboard","w+");
-		fprintf(scoreboard,"%d %lld %d",historyMaxScore,totalScore,level);
-		fprintf(achievement,"%lld",achievementsUnlockedNow);
+		achievement = fopen("suvirorAchievement", "w+");
+		scoreboard = fopen("suvirorScoreboard", "w+");
+		fprintf(scoreboard, "%d %lld %d", historyMaxScore, totalScore, level);
+		fprintf(achievement, "%lld", achievementsUnlockedNow);
 		printf("\n               \n");
 		system("pause");
 	}
 }
 
 void runGame() {
-	switch(gamemode) {
-		case 0: {
-			offlineSurvivor::offlineSurvivor();
-			break;
-		}
-		case 1: {
-			offlineKiller::offlineKiller();
-			break;
-		}
-		default: {
-			system("color 5D");
-			system("cls");
-			SetConsoleCursorPosition(hOut,posBegin);
-			printf("’‚∏ˆ”Œœ∑ƒ£ Ω’˝‘⁄÷∆◊˜÷–(°®'®å'°®)");
-			SetConsoleCursorPosition(hOut,posPause);
-			system("pause");
-			system("cls");
-			system("color F0");
-			return;
-		}
+	switch (gamemode) {
+	case 0: {
+		offlineSurvivor::offlineSurvivor();
+		break;
+	}
+	case 1: {
+		offlineKiller::offlineKiller();
+		break;
+	}
+	default: {
+		system("color 5D");
+		system("cls");
+		SetConsoleCursorPosition(hOut, posBegin);
+		printf("Ëøô‰∏™Ê∏∏ÊàèÊ®°ÂºèÊ≠£Âú®Âà∂‰Ωú‰∏≠(„ÄÉ'‚ñΩ'„ÄÉ)");
+		SetConsoleCursorPosition(hOut, posPause);
+		system("pause");
+		system("cls");
+		system("color F0");
+		return;
+	}
 	}
 }
 
 void showgamemode() {
 	system("cls");
-	printf("∞¥\"A\"∫Õ\"D\"«–ªªƒ—∂»,∞¥Enterº¸»∑»œ\n");
-	switch(gamemode) {
-		case 0:
-			system("color 2A");
-			printf("¿Îœﬂ«Û…˙’ﬂ\n");
-			break;
-		case 1:
-			system("color C4");
-			printf("¿Îœﬂ…± ÷\n");
-			break;
-		case 2:
-			system("color 2A");
-			printf("‘⁄œﬂ«Û…˙’ﬂ\n");
-			break;
-		case 3:
-			system("color C4");
-			printf("‘⁄œﬂ…± ÷\n");
+	printf("Êåâ\"A\"Âíå\"D\"ÂàáÊç¢ÈöæÂ∫¶,ÊåâEnterÈîÆÁ°ÆËÆ§\n");
+	switch (gamemode) {
+	case 0:
+		system("color 2A");
+		printf("Á¶ªÁ∫øÊ±ÇÁîüËÄÖ\n");
+		break;
+	case 1:
+		system("color C4");
+		printf("Á¶ªÁ∫øÊùÄÊâã\n");
+		break;
+	case 2:
+		system("color 2A");
+		printf("Âú®Á∫øÊ±ÇÁîüËÄÖ\n");
+		break;
+	case 3:
+		system("color C4");
+		printf("Âú®Á∫øÊùÄÊâã\n");
 	}
 }
 
 void chooseGamemode() {
-	gamemode=0;
-	_sleep(250);
-	while(true) {
+	gamemode = 0;
+	Sleep(250);
+	while (true) {
 		showgamemode();
-		while(!(KEY_DOWN('A')||KEY_DOWN('D')||KEY_DOWN(VK_RETURN)
-		        ||KEY_DOWN('F')||KEY_DOWN(VK_RIGHT)||KEY_DOWN(VK_LEFT)))_sleep(10);
-		if(KEY_DOWN(VK_RETURN)||KEY_DOWN('F'))return;
-		if((KEY_DOWN('A')||KEY_DOWN(VK_LEFT))&&gamemode>0)gamemode--;
-		if((KEY_DOWN('D')||KEY_DOWN(VK_RIGHT))&&gamemode<=NUM_MAXMODENUM)gamemode++;
-		_sleep(150);
+		while (!(KEY_DOWN('A') || KEY_DOWN('D') || KEY_DOWN(VK_RETURN)
+			|| KEY_DOWN('F') || KEY_DOWN(VK_RIGHT) || KEY_DOWN(VK_LEFT)))Sleep(10);
+		if (KEY_DOWN(VK_RETURN) || KEY_DOWN('F'))return;
+		if ((KEY_DOWN('A') || KEY_DOWN(VK_LEFT)) && gamemode > 0)gamemode--;
+		if ((KEY_DOWN('D') || KEY_DOWN(VK_RIGHT)) && gamemode <= NUM_MAXMODENUM)gamemode++;
+		Sleep(150);
 	}
 }
 
 int main() {
+	//cout << TASK_UNMAPPED_BASE << TASK_SIZE;
+	cout << thread::hardware_concurrency()<<endl;
+	//system("pause");
+	srand(time(NULL));
 	system("mode con cols=80 lines=30");
-	hOut=GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_CURSOR_INFO cursor_info= {1,0};
+	hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO cursor_info = { 1,0 };
+	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+	DWORD mode;
+	GetConsoleMode(hStdin, &mode);
+	mode &= ~ENABLE_QUICK_EDIT_MODE;
+	SetConsoleMode(hStdin, mode);
 	SetConsoleCursorInfo(hOut, &cursor_info);
-	SetConsoleTitle("ƒ≥»Àµƒª∂¿÷–°”Œœ∑:\"“ª–‹’Ω∂˛π∑\"");
-	SetConsoleScreenBufferSize(hOut,size);
+	SetConsoleTitle(L"Êüê‰∫∫ÁöÑÊ¨¢‰πêÂ∞èÊ∏∏Êàè:\"‰∏ÄÁÜäÊàò‰∫åÁãó\"");
+	SetConsoleScreenBufferSize(hOut, Size);
 restart:
 	system("color F0");
 	system("cls");
-	SetConsoleCursorPosition(hOut,posBegin);
+	SetConsoleCursorPosition(hOut, posBegin);
 	printf("1 Survivor VS 2 Killers");
-	SetConsoleCursorPosition(hOut,posPause);
+	SetConsoleCursorPosition(hOut, posPause);
 	system("pause");
-	if(KEY_DOWN(VK_ESCAPE))if(MessageBox(NULL,"ƒ„»∑∂®“™ÕÀ≥ˆ¬£ø","Ã· æ",
-		                                     MB_ICONQUESTION|MB_YESNO)==IDYES)return 0;
+	if (KEY_DOWN(VK_ESCAPE))if (MessageBox(NULL, L"‰Ω†Á°ÆÂÆöË¶ÅÈÄÄÂá∫ÂêóÔºü", L"ÊèêÁ§∫",
+		MB_ICONQUESTION | MB_YESNO) == IDYES)return 0;
 	chooseGamemode();
 	runGame();
 	goto restart;

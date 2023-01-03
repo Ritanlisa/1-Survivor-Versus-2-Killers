@@ -1,0 +1,17 @@
+﻿  1SV2K.cpp
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1127,19): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1145,25): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1244,28): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1474,63): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1477,54): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1583,52): warning C4244: “-=”: 从“double”转换到“unsigned __int64”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(1340,7): warning C4101: “indexes”: 未引用的局部变量
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2461,19): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2464,25): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2571,28): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2790,63): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2793,54): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2886,52): warning C4244: “-=”: 从“double”转换到“unsigned __int64”，可能丢失数据
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2662,7): warning C4101: “indexes”: 未引用的局部变量
+C:\Users\Ritanlisa\source\repos\1SV2K\1SV2K.cpp(2962,12): warning C4244: “参数”: 从“time_t”转换到“unsigned int”，可能丢失数据
+  1SV2K.vcxproj -> C:\Users\Ritanlisa\source\repos\1SV2K\Debug\1SV2K.exe
